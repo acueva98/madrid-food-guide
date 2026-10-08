@@ -96,14 +96,15 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute
 .mapkey .ring{width:9px;height:9px;border-radius:50%;border:2px solid var(--t0)}
 
 /* Leaflet markers */
-.mk{width:16px;height:16px;border-radius:50%;background:var(--tc);border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;line-height:1;transition:transform .15s}
-.mk.approx{background:#fff;border:3px solid var(--tc)}
-.mk.isfav{width:20px;height:20px;margin:-2px 0 0 -2px}
+.mk{width:20px;height:20px;border-radius:50%;background:var(--tc);border:3px solid #fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;line-height:1;transition:transform .15s}
+.mk.approx{background:#fff;border:5px solid var(--tc)}
+.mk.isfav{width:24px;height:24px;margin:-2px 0 0 -2px;font-size:12px}
 .mk.isfav.approx{color:var(--tc)}
 .mk.hot{transform:scale(1.45);z-index:1000}
-.cl{width:34px;height:34px;border-radius:50%;background:var(--ink);color:var(--bg);border:3px solid var(--card);display:flex;align-items:center;justify-content:center;font:700 13px/1 -apple-system,BlinkMacSystemFont,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.cl{width:36px;height:36px;border-radius:50%;background:var(--ink);color:var(--bg);border:3px solid #fff;display:flex;align-items:center;justify-content:center;font:700 13px/1 -apple-system,BlinkMacSystemFont,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.35)}
 .leaflet-container{font-family:inherit;background:var(--bg)}
-#map.dark-tiles .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.6)}
+#map .leaflet-tile-pane{filter:grayscale(.75) brightness(1.12) contrast(.8);opacity:.85}
+#map.dark-tiles .leaflet-tile-pane{opacity:1;filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.6)}
 .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--card);color:var(--ink)}
 .leaflet-popup-content{margin:12px 14px;font-size:13px;line-height:1.4}
 .pop .t{font-weight:650;font-size:15px}
@@ -455,7 +456,7 @@ function leafletMap(){
   var markers = {};
   function icon(it, hot){
     var g = GEO[it.n], cls = "mk tier"+it.tier+(g[2]?" approx":"")+(FAV[it.n]?" isfav":"")+(hot?" hot":"");
-    return L.divIcon({className:"", html:'<div class="'+cls+'">'+(FAV[it.n]?"★":"")+'</div>', iconSize:[16,16], iconAnchor:[8,8], popupAnchor:[0,-8]});
+    return L.divIcon({className:"", html:'<div class="'+cls+'">'+(FAV[it.n]?"★":"")+'</div>', iconSize:[20,20], iconAnchor:[10,10], popupAnchor:[0,-10]});
   }
   ALL.forEach(function(it){
     var g = GEO[it.n]; if(!g) return;
@@ -475,12 +476,13 @@ function leafletMap(){
     if(home) map.flyToBounds(home, {padding:[30,30], maxZoom:15, duration:.6});
   }
   map.on("popupopen", showBack);
-  map.on("zoomend", function(){ if(home && map.getZoom() > map.getBoundsZoom(home, false, L.point(60,60))) showBack(); });
+  var homeZoom = null;
+  map.on("zoomend", function(){ if(homeZoom!=null && map.getZoom() > homeZoom) showBack(); });
   function update(){
     group.clearLayers();
     var shown = [];
     ALL.forEach(function(it){ var m = markers[it.id]; if(!m) return; m.setIcon(icon(it)); if(passes(it)){ group.addLayer(m); shown.push(m.getLatLng()); } });
-    if(first){ first = false; if(shown.length){ home = L.latLngBounds(shown); map.fitBounds(home, {padding:[30,30], maxZoom:15}); } }
+    if(first){ first = false; if(shown.length){ home = L.latLngBounds(shown); map.fitBounds(home, {padding:[30,30], maxZoom:15}); homeZoom = map.getZoom(); } }
   }
   return {
     map: map, tiles: tiles,
