@@ -5,166 +5,178 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Madrid Food Guide</title>
 <meta name="description" content="A shortlist of Madrid restaurants from a friend's recommendations, with prices, links and a map.">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <style>
-/* Layout: header, legend and filters on top; restaurant cards on the left, sticky sketch map of central Madrid on the right; stacks (map first) on phones. */
+/* Layout: title, a slim toolbar (filters toggle, favorites, count), collapsible filter panel; cards on the left, sticky real map on the right; on phones the map sits above the list. Price tiers are colour-coded everywhere (chips, cards, pins). */
 :root{
-  --bg:#faf7f2;--card:#ffffff;--ink:#1f1b16;--muted:#6b6258;--line:#e7dfd3;
-  --accent:#1f1b16;--fav:#e0582f;--chip:#efe7da;--chip-on:#1f1b16;--chip-on-ink:#faf7f2;
-  --src:#2f6b3d;--est:#9a6a12;--none:#8a3b3b;
-  --road:#ddd3c4;--park:#dbe6cf;--park-ink:#4f6b3a;--pin:#1f1b16;--pin-dim:#d3c9ba;--hot:#fbeee6;
+  --bg:#faf7f2;--card:#ffffff;--ink:#1f1b16;--muted:#6b6258;--line:#e2d9cb;--chip:#efe7da;--chip-on:#1f1b16;--chip-on-ink:#faf7f2;
+  --fav:#d9542b;--hot:#fbf1ea;
+  --t1:#2e7d4f;--t2:#2b6cb0;--t3:#7b4bb0;--t4:#b8323a;--t0:#8a8178;
+  --road:#ddd3c4;--park:#dbe6cf;--park-ink:#4f6b3a;
   box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --bg:#16130f;--card:#201c17;--ink:#f1ebe2;--muted:#a79d90;--line:#332d25;
-    --accent:#f1ebe2;--fav:#ff7a5c;--chip:#2a251e;--chip-on:#f1ebe2;--chip-on-ink:#16130f;
-    --src:#7fcf92;--est:#e7b95a;--none:#e58a8a;
-    --road:#3b342b;--park:#25301f;--park-ink:#9fbf86;--pin:#f1ebe2;--pin-dim:#4a4238;--hot:#33241d;
+    --bg:#16130f;--card:#201c17;--ink:#f1ebe2;--muted:#a79d90;--line:#373027;--chip:#2a251e;--chip-on:#f1ebe2;--chip-on-ink:#16130f;
+    --fav:#ff8a66;--hot:#2e231c;
+    --t1:#6fcf97;--t2:#7ab3ea;--t3:#c3a0ef;--t4:#f08a96;--t0:#9a9086;
+    --road:#3b342b;--park:#25301f;--park-ink:#9fbf86;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#16130f;--card:#201c17;--ink:#f1ebe2;--muted:#a79d90;--line:#332d25;
-  --accent:#f1ebe2;--fav:#ff7a5c;--chip:#2a251e;--chip-on:#f1ebe2;--chip-on-ink:#16130f;
-  --src:#7fcf92;--est:#e7b95a;--none:#e58a8a;
-  --road:#3b342b;--park:#25301f;--park-ink:#9fbf86;--pin:#f1ebe2;--pin-dim:#4a4238;--hot:#33241d;
+  --bg:#16130f;--card:#201c17;--ink:#f1ebe2;--muted:#a79d90;--line:#373027;--chip:#2a251e;--chip-on:#f1ebe2;--chip-on-ink:#16130f;
+  --fav:#ff8a66;--hot:#2e231c;
+  --t1:#6fcf97;--t2:#7ab3ea;--t3:#c3a0ef;--t4:#f08a96;--t0:#9a9086;
+  --road:#3b342b;--park:#25301f;--park-ink:#9fbf86;
   color-scheme:dark;
 }
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
+.btn[aria-expanded="true"]{border-color:var(--ink)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-.wrap{max-width:1140px;margin:0 auto;padding-inline:16px;padding-block:20px 48px}
-.intro{max-width:720px}
-h1{font-size:28px;margin:4px 0 4px;letter-spacing:-.02em;text-wrap:balance}
-.sub{color:var(--muted);margin:0 0 14px;font-size:14px}
-.legend{font-size:13px;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:14px}
-.legend b{color:var(--ink)}
-.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 8px;-webkit-overflow-scrolling:touch}
-.flabel{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:6px 0 2px}
-.fcount{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin:4px 0 0}
-.fcount button{font:inherit;font-size:13px;border:0;background:none;color:var(--accent);cursor:pointer;padding:4px 0;text-decoration:underline}
-.chip{flex:0 0 auto;border:0;background:var(--chip);color:var(--ink);padding:8px 14px;border-radius:999px;font-size:14px;cursor:pointer;font-family:inherit}
-.chip[aria-pressed="true"]{background:var(--chip-on);color:var(--chip-on-ink)}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:16px;padding-block:20px 48px}
+h1{font-size:30px;margin:0;letter-spacing:-.02em;text-wrap:balance}
+.sub{color:var(--muted);margin:2px 0 14px;font-size:14px}
+
+/* One button style for everything */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:34px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-family:inherit;font-weight:500;font-size:13px;line-height:1;text-decoration:none;white-space:nowrap;cursor:pointer}
+.btn:hover{border-color:var(--ink)}
+.btn[aria-pressed="true"]{border-color:var(--ink);background:var(--chip-on);color:var(--chip-on-ink)}
+.btn.fav[aria-pressed="true"]{background:var(--card);border-color:var(--fav);color:var(--fav)}
+.btn .n{display:inline-flex;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--fav);color:#fff;font-size:11px;align-items:center;justify-content:center}
+.btn .n:empty{display:none}
 button:focus-visible,a:focus-visible{outline:2px solid var(--fav);outline-offset:2px}
-#map circle:focus{outline:none}
-#map circle:focus-visible{stroke:var(--fav);stroke-width:3}
-h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:26px 0 4px}
+
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-block:10px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.toolbar .count{margin-left:auto;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.linkbtn{font:inherit;font-size:13px;border:0;background:none;color:var(--ink);text-decoration:underline;cursor:pointer;padding:4px}
+.panel{display:grid;gap:10px;padding-block:12px;border-bottom:1px solid var(--line)}
+.frow{display:grid;grid-template-columns:110px minmax(0,1fr);gap:8px;align-items:start}
+.flabel{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding-top:9px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--ink);font:inherit;font-size:13px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--chip-on);color:var(--chip-on-ink);border-color:var(--chip-on)}
+.dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:var(--tc,var(--t0))}
+.favrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding-block:10px;border-bottom:1px solid var(--line);font-size:13px}
+.favrow .chip{border-color:var(--fav);color:var(--fav)}
+.favrow a{color:var(--ink);margin-left:4px}
+
+/* tiers */
+.tier1{--tc:var(--t1)}.tier2{--tc:var(--t2)}.tier3{--tc:var(--t3)}.tier4{--tc:var(--t4)}.tier0{--tc:var(--t0)}
+
+.main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:24px;align-items:start;margin-top:18px}
+.list > h2:first-child{margin-top:0}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:26px 0 2px}
 .cathint{font-size:13px;color:var(--muted);margin:0 0 10px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;transition:background .15s,border-color .15s}
-.card.hot{background:var(--hot);border-color:var(--fav)}
-.top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--tc);border-radius:12px;padding:14px;margin-bottom:10px;transition:background .15s}
+.card.hot{background:var(--hot)}
+.top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
 .top > div:first-child{min-width:0}
 .name{font-size:18px;font-weight:650;margin:0}
 .addr{font-size:13px;color:var(--muted);margin:2px 0 0}
-.price{text-align:right;flex:0 0 auto}
-.price .amt{font-size:18px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
-.price .pp{font-size:11px;color:var(--muted)}
-.tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid currentColor;margin-top:4px}
-.tag.src{color:var(--src)}.tag.est{color:var(--est)}.tag.none{color:var(--none)}
-.friend{font-size:13px;margin:8px 0 0;color:var(--ink)}
+.price{flex:0 0 auto;text-align:right}
+.tierbadge{display:inline-flex;align-items:center;gap:6px;color:var(--tc);font-weight:700;font-size:15px;letter-spacing:.02em}
+.tierbadge .off{opacity:.25}
+.amt{font-size:13px;color:var(--ink);font-variant-numeric:tabular-nums;margin-top:2px}
+.conf{font-size:11px;color:var(--muted)}
+.friend{font-size:13px;margin:8px 0 0}
 .friend i{color:var(--muted)}
 .note{font-size:13px;color:var(--muted);margin:6px 0 0}
-.links{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.links a{font-size:13px;text-decoration:none;color:var(--accent);border:1px solid var(--line);padding:5px 10px;border-radius:8px}
-.links a.main{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.links{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .empty{color:var(--muted);text-align:center;padding:30px 0}
 
-/* Two-column body: list + sticky map */
-.main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start;margin-top:8px}
-.mapcol{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px)}
-.mapbox{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:14px}
-.maphead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
-.maphead b{font-size:15px}
-.mapbtns{display:flex;gap:6px;flex-wrap:wrap}
-.mapbtns button,.fav,.onmap{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--chip);color:var(--ink);padding:5px 10px;border-radius:8px;cursor:pointer}
-.mapbtns button[aria-pressed="true"]{background:var(--chip-on);color:var(--chip-on-ink)}
-#map{width:100%;height:auto;display:block;border-radius:10px;background:var(--bg);touch-action:manipulation}
-#map .road{fill:none;stroke:var(--road);stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
-#map .road.minor{stroke-width:3}
-#map .park{fill:var(--park);stroke:none}
-#map .rlabel{font:600 9px/1 ui-monospace,Menlo,monospace;letter-spacing:.06em;fill:var(--muted)}
-#map .hlabel{font:600 12px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--bg);stroke-width:4px}
-#map .plabel{font:italic 11px/1 Georgia,serif;fill:var(--park-ink)}
-#map circle.pin{fill:var(--pin);stroke:var(--card);stroke-width:1.5;cursor:pointer;transition:r .15s}
-#map circle.pin.approx{fill:var(--card);stroke:var(--pin);stroke-width:2}
-#map circle.pin.isfav{fill:var(--fav);stroke:var(--card)}
-#map circle.pin.isfav.approx{fill:var(--card);stroke:var(--fav)}
-#map circle.pin.off{fill:var(--pin-dim);stroke:var(--card);stroke-width:1.5}
-#map circle.pin.hot{stroke:var(--fav);stroke-width:3}
-#map .tip{font:600 12px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:var(--ink);paint-order:stroke;stroke:var(--bg);stroke-width:4px;pointer-events:none}
-.mapnote{font-size:12px;color:var(--muted);margin:6px 0 0;display:flex;flex-wrap:wrap;gap:4px 14px;justify-content:space-between}
-.key{display:inline-flex;align-items:center;gap:5px}
-.key i{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--pin)}
-.key i.o{background:var(--card);border:2px solid var(--pin)}
-.key i.f{background:var(--fav)}
-.sel{margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:10px;font-size:14px}
-.sel .t{font-weight:650}
-.sel .m{color:var(--muted);font-size:13px}
-.sel .links{margin-top:8px}
-.sel button{font:inherit;font-size:13px;border:1px solid var(--accent);background:var(--accent);color:var(--bg);padding:5px 10px;border-radius:8px;cursor:pointer}
-.favlist{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.favlist span{background:var(--fav);color:#fff;font-size:13px;padding:4px 10px;border-radius:999px;cursor:pointer}
-.route{display:inline-block;margin-top:8px;font-size:13px;color:var(--accent)}
-.fav{border-color:var(--accent);color:var(--accent);background:transparent}
-.fav[aria-pressed="true"]{background:var(--fav);border-color:var(--fav);color:#fff}
-.onmap{background:transparent}
-.nomap{font-size:12px;color:var(--muted);align-self:center}
-.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:9;border:0;background:var(--accent);color:var(--bg);font:inherit;font-weight:600;padding:10px 16px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer}
-footer{font-size:12px;color:var(--muted);margin-top:28px;max-width:720px}
+.mapcol{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+.mapbox{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+#map{height:calc(100vh - 110px);min-height:420px;max-height:820px;width:100%;background:var(--bg)}
+#map svg.sketch{width:100%;height:100%;display:block}
+.mapkey{display:flex;flex-wrap:wrap;gap:6px 14px;padding:8px 12px;font-size:12px;color:var(--muted);border-top:1px solid var(--line)}
+.mapkey span{display:inline-flex;align-items:center;gap:5px}
+.mapkey .ring{width:9px;height:9px;border-radius:50%;border:2px solid var(--t0)}
+
+/* Leaflet markers */
+.mk{width:16px;height:16px;border-radius:50%;background:var(--tc);border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;line-height:1;transition:transform .15s}
+.mk.approx{background:#fff;border:3px solid var(--tc)}
+.mk.isfav{width:20px;height:20px;margin:-2px 0 0 -2px}
+.mk.isfav.approx{color:var(--tc)}
+.mk.hot{transform:scale(1.45);z-index:1000}
+.cl{width:34px;height:34px;border-radius:50%;background:var(--ink);color:var(--bg);border:3px solid var(--card);display:flex;align-items:center;justify-content:center;font:700 13px/1 -apple-system,BlinkMacSystemFont,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.leaflet-container{font-family:inherit;background:var(--bg)}
+#map.dark-tiles .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.6)}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--card);color:var(--ink)}
+.leaflet-popup-content{margin:12px 14px;font-size:13px;line-height:1.4}
+.pop .t{font-weight:650;font-size:15px}
+.pop .m{color:var(--muted)}
+.pop .links{margin-top:8px}
+.backall{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:1000;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.mapbox{position:relative}
+.leaflet-popup-close-button{color:var(--muted)!important;font-size:20px!important;width:28px!important;height:28px!important}
+.leaflet-bar a{background:var(--card);color:var(--ink);border-color:var(--line)}
+.leaflet-control-attribution{background:color-mix(in srgb,var(--card) 80%,transparent)!important;color:var(--muted)}
+.leaflet-control-attribution a{color:var(--muted)}
+
+/* sketch fallback */
+.sketch .road{fill:none;stroke:var(--road);stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.sketch .road.minor{stroke-width:3}
+.sketch .park{fill:var(--park)}
+.sketch .rlabel{font:600 9px/1 ui-monospace,Menlo,monospace;letter-spacing:.06em;fill:var(--muted)}
+.sketch .hlabel{font:600 12px/1 -apple-system,BlinkMacSystemFont,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--bg);stroke-width:4px}
+.sketch .plabel{font:italic 11px/1 Georgia,serif;fill:var(--park-ink)}
+.sketch circle{fill:var(--tc);stroke:var(--card);stroke-width:1.5;cursor:pointer}
+.sketch circle.approx{fill:var(--card);stroke:var(--tc);stroke-width:2.5}
+.sketch circle.hot{stroke:var(--ink);stroke-width:3}
+.sketch circle:focus{outline:none}
+.sketch .tip{font:600 12px/1 -apple-system,BlinkMacSystemFont,sans-serif;fill:var(--ink);paint-order:stroke;stroke:var(--bg);stroke-width:4px;pointer-events:none}
+
+.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:1001;height:40px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+footer{font-size:12px;color:var(--muted);margin-top:28px}
 
 @media (max-width:900px){
   .main{grid-template-columns:minmax(0,1fr)}
   .mapcol{order:-1;position:static}
+  #map{height:58vh;min-height:320px}
+  .frow{grid-template-columns:minmax(0,1fr)}
+  .flabel{padding-top:0}
 }
-@media (min-width:901px){ .fab{display:none} }
+@media (min-width:901px){ .fab{display:none!important} }
 @media (prefers-reduced-motion:reduce){ *{transition:none!important} }
 </style>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" crossorigin=""></script>
 </head>
 <body>
 <div class="wrap">
-  <div class="intro">
-    <h1>Madrid food guide</h1>
-    <p class="sub">A shortlist of Madrid restaurants, split by place, with links, per-person prices and a map.</p>
+  <h1>Madrid food guide</h1>
+  <p class="sub">A friend's shortlist of Madrid restaurants, with prices per person, links and a map.</p>
 
-    <div class="legend">
-      <b>Prices</b> are approximate € per person (food plus a drink or two, unless noted).
-      <span class="tag src">Sourced</span> from reviews or guides ·
-      <span class="tag est">Estimate</span> my rough read of the price tier ·
-      <span class="tag none">Not found</span> I couldn't confirm it.
-      <br><b>Links:</b> only a few official domains could be verified. The "Menu / site" buttons are Google searches so you land on the current official page and carta.
-    </div>
-
-    <div class="mapbox" id="favbox">
-      <div class="maphead"><b>Your favorites</b>
-        <div class="mapbtns"><button type="button" id="bFav" aria-pressed="false">Show favorites only</button></div>
-      </div>
-      <div id="favs"></div>
-    </div>
-
-    <div class="flabel">Price</div><div class="chips" id="chipsP" role="group" aria-label="Filter by price"></div>
-    <div class="flabel">Type of food</div><div class="chips" id="chipsT" role="group" aria-label="Filter by type of food"></div>
-    <div class="flabel">Area of Madrid</div><div class="chips" id="chipsA" role="group" aria-label="Filter by area"></div>
-    <div class="fcount"><span id="count"></span><button type="button" id="bClear">Clear filters</button></div>
+  <div class="toolbar">
+    <button type="button" class="btn" id="bFilters" aria-expanded="false" aria-controls="panel">Filters <span class="n" id="nActive"></span></button>
+    <button type="button" class="btn" id="bFav" aria-pressed="false">★ Favorites only</button>
+    <button type="button" class="linkbtn" id="bClear" hidden>Clear filters</button>
+    <span class="count" id="count"></span>
   </div>
+  <div class="panel" id="panel" hidden>
+    <div class="frow"><div class="flabel">Price pp</div><div class="chips" id="chipsP" role="group" aria-label="Filter by price"></div></div>
+    <div class="frow"><div class="flabel">Type of food</div><div class="chips" id="chipsT" role="group" aria-label="Filter by type of food"></div></div>
+    <div class="frow"><div class="flabel">Area</div><div class="chips" id="chipsA" role="group" aria-label="Filter by area"></div></div>
+  </div>
+  <div class="favrow" id="favs" hidden></div>
 
   <div class="main">
-    <div id="list"></div>
+    <div class="list" id="list"></div>
     <div class="mapcol" id="mapcol">
       <div class="mapbox">
-        <div class="maphead"><b>Map</b><span class="nomap" id="mapcount"></span></div>
-        <svg id="map" viewBox="0 0 540 557" role="img" aria-label="Sketch map of central Madrid with restaurant locations"></svg>
-        <div class="mapnote">
-          <span><span class="key"><i></i>Address confirmed</span> &nbsp;<span class="key"><i class="o"></i>Street or area only</span> &nbsp;<span class="key"><i class="f"></i>Favorite</span></span>
-          <span>N ↑ · about 3.5 km across</span>
-        </div>
-        <div class="sel" id="sel" hidden></div>
+        <div id="map" role="region" aria-label="Map of restaurants"></div>
+        <button type="button" class="btn backall" id="backAll" hidden>← Back to all places</button>
+        <div class="mapkey" id="mapkey"></div>
       </div>
     </div>
   </div>
 
-  <footer>Prices change often and tasting-menu places vary a lot with wine. Check the current carta and book early for anywhere marked hard to get into. Map positions are approximate.</footer>
+  <footer>Prices change often and tasting-menu places vary a lot with wine. Check the current carta and book early for anywhere marked hard to get into. Hollow pins mean only the street or area is known.</footer>
 </div>
-<button type="button" class="fab" id="fab" hidden>↑ Map</button>
+<button type="button" class="btn fab" id="fab" hidden>↑ Map</button>
 
 <script>
 var G = "https://www.google.com/";
@@ -285,51 +297,20 @@ var GEO = {
  "Puntarena":[40.4297,-3.7097],"Bakán":[40.4207,-3.6872,1],"Fisher's":[40.4270,-3.6839],"Ticuí":[40.4170,-3.6987]
 };
 
-var FILTERS = [
-  {k:"all",t:"All"},{k:"u30",t:"Under €30",f:function(m){return m<30}},
-  {k:"m",t:"€30–50",f:function(m){return m>=30&&m<50}},
-  {k:"h",t:"€50–80",f:function(m){return m>=50&&m<80}},
-  {k:"x",t:"€80+",f:function(m){return m>=80}},
-  {k:"nf",t:"Price not found"}
+/* ---------- Price tiers (by midpoint of the per-person range) ---------- */
+var TIERS = [
+  {k:"1", s:"€",    t:"Under €30", f:function(m){return m<30}},
+  {k:"2", s:"€€",   t:"€30–50",    f:function(m){return m>=30&&m<50}},
+  {k:"3", s:"€€€",  t:"€50–80",    f:function(m){return m>=50&&m<80}},
+  {k:"4", s:"€€€€", t:"€80+",      f:function(m){return m>=80}}
 ];
-var cur = "all";
-
-function badge(b){
-  if(b==="src") return '<span class="tag src">Sourced</span>';
-  if(b==="est") return '<span class="tag est">Estimate</span>';
-  return '<span class="tag none">Not found</span>';
-}
+function mid(it){ return it.lo==null ? null : (it.lo+it.hi)/2; }
+function tierOf(it){ var m = mid(it); if(m==null) return "0"; for(var i=0;i<TIERS.length;i++) if(TIERS[i].f(m)) return TIERS[i].k; return "0"; }
+function tierSym(k){ if(k==="0") return "?"; var n=+k; return "€".repeat(n)+'<span class="off">'+"€".repeat(4-n)+'</span>'; }
+function rangeText(it){ return it.lo==null ? "Price not found" : "€"+it.lo+"–"+it.hi+(it.hi>=200?"+":"")+" pp"; }
+var CONF = {src:"Sourced", est:"Estimate", none:"Not confirmed"};
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
-function priceText(it){ return it.lo==null ? "Price not found" : "€"+it.lo+"–"+it.hi+(it.hi>=200?"+":"")+" pp"; }
 
-function render(){
-  var out="", total=0;
-  DATA.forEach(function(c){
-    var cards="";
-    c.items.forEach(function(it){
-      var mid = (it.lo==null)?null:(it.lo+it.hi)/2;
-      if(!passes(it)) return;
-      total++;
-      var price = mid===null ? '<div class="amt">?</div>' :
-        '<div class="amt">€'+it.lo+'–'+it.hi+(it.hi>=200?'+':'')+'</div><div class="pp">per person</div>';
-      var links = favBtn(it)+'<a class="main" href="'+site(it.n)+'" target="_blank" rel="noopener">Menu / site</a>';
-      it.l.forEach(function(x){ links += '<a href="'+esc(x[1])+'" target="_blank" rel="noopener">'+esc(x[0])+'</a>'; });
-      links += '<a href="'+maps(it.n)+'" target="_blank" rel="noopener">Google Maps</a>';
-      links += GEO[it.n] ? '<button type="button" class="onmap" data-m="'+it.id+'">Show on map</button>' : '<span class="nomap">Not on map</span>';
-      cards += '<div class="card" data-id="'+it.id+'"><div class="top"><div><h3 class="name">'+esc(it.n)+'</h3><p class="addr">'+esc(it.a)+'</p></div>'+
-        '<div class="price">'+price+badge(it.b)+'</div></div>'+
-        (it.f?'<p class="friend"><i>Friend says:</i> '+esc(it.f)+'</p>':'')+
-        '<p class="note">'+esc(it.note)+'</p><div class="links">'+links+'</div></div>';
-    });
-    if(cards) out += '<h2>'+esc(c.cat)+'</h2><p class="cathint">'+esc(c.hint)+'</p>'+cards;
-  });
-  document.getElementById("list").innerHTML = out || '<p class="empty">Nothing matches these filters.</p>';
-  document.getElementById("count").textContent = "Showing "+total+" of "+ALL.length+" places";
-  drawPins();
-  refresh();
-}
-
-var curT = "all", curA = "all";
 var TYPE_ORDER = ["Steak & grill","Spanish","Tapas & bars","Cafés","Japanese","Italian","Mexican","Latin & international"];
 var AREA_ORDER = ["Chueca & Salesas","Chamberí","Salamanca","Centro","Chamartín & North","Not confirmed"];
 var TYPE = {
@@ -348,192 +329,279 @@ var AREA = {
  "Ticuí":"Centro","Ikigai":"Centro","Ugo Chan":"Chamartín & North",
  "Castizo":"Not confirmed","Pelotari":"Not confirmed","Raza":"Not confirmed","Jack's Library":"Not confirmed","Sushita":"Not confirmed"
 };
+
+var ITEMS = {}, BYID = {}, ALL = [];
+DATA.forEach(function(c){ c.items.forEach(function(it){ it.id = ALL.length+1; it.tier = tierOf(it); ALL.push(it); ITEMS[it.n]=it; BYID[it.id]=it; }); });
+
+/* ---------- State ---------- */
+var st = {p:"all", t:"all", a:"all", favOnly:false};
+var FAV = {};
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+try{ FAV = JSON.parse(lsGet("madridFavs")||"{}") || {}; }catch(e){ FAV = {}; }
+function saveFav(){ lsSet("madridFavs", JSON.stringify(FAV)); }
+
 function passes(it){
-  var mid = (it.lo==null)?null:(it.lo+it.hi)/2;
-  if(cur==="nf"){ if(mid!==null) return false; }
-  else if(cur!=="all"){
-    var f = FILTERS.filter(function(x){return x.k===cur})[0];
-    if(mid===null||!f.f(mid)) return false;
-  }
-  if(curT!=="all" && TYPE[it.n]!==curT) return false;
-  if(curA!=="all" && AREA[it.n]!==curA) return false;
-  if(favOnly && !FAV[it.n]) return false;
+  if(st.p!=="all" && it.tier!==st.p) return false;
+  if(st.t!=="all" && TYPE[it.n]!==st.t) return false;
+  if(st.a!=="all" && AREA[it.n]!==st.a) return false;
+  if(st.favOnly && !FAV[it.n]) return false;
   return true;
 }
-function chipRow(id, opts, getCur, setCur){
-  var el = document.getElementById(id); el.innerHTML="";
-  opts.forEach(function(o){
-    var b = document.createElement("button");
-    b.className="chip"; b.type="button"; b.textContent=o.t;
-    b.setAttribute("aria-pressed", o.k===getCur()?"true":"false");
-    b.onclick=function(){ setCur(o.k); buildChips(); render(); };
-    el.appendChild(b);
-  });
+function activeCount(){ return (st.p!=="all")+(st.t!=="all")+(st.a!=="all"); }
+
+/* ---------- Filters ---------- */
+function chipRow(id, opts, key){
+  var el = document.getElementById(id);
+  el.innerHTML = opts.map(function(o){
+    return '<button type="button" class="chip'+(o.cls?" "+o.cls:"")+'" data-f="'+key+'" data-v="'+esc(o.k)+'" aria-pressed="'+(st[key]===o.k)+'">'+(o.dot?'<span class="dot"></span>':'')+esc(o.t)+'</button>';
+  }).join("");
 }
 function buildChips(){
-  chipRow("chipsP", FILTERS, function(){return cur}, function(v){cur=v});
-  chipRow("chipsT", [{k:"all",t:"All"}].concat(TYPE_ORDER.map(function(t){return {k:t,t:t}})), function(){return curT}, function(v){curT=v});
-  chipRow("chipsA", [{k:"all",t:"All"}].concat(AREA_ORDER.map(function(t){return {k:t,t:t}})), function(){return curA}, function(v){curA=v});
+  chipRow("chipsP", [{k:"all",t:"All"}].concat(TIERS.map(function(x){ return {k:x.k, t:x.s+"  "+x.t, cls:"tier"+x.k, dot:1}; })).concat([{k:"0",t:"Price not found",cls:"tier0",dot:1}]), "p");
+  chipRow("chipsT", [{k:"all",t:"All"}].concat(TYPE_ORDER.map(function(t){ return {k:t,t:t}; })), "t");
+  chipRow("chipsA", [{k:"all",t:"All"}].concat(AREA_ORDER.map(function(t){ return {k:t,t:t}; })), "a");
+  var n = activeCount();
+  document.getElementById("nActive").textContent = n ? n : "";
+  document.getElementById("bClear").hidden = !(n || st.favOnly);
+  var bf = document.getElementById("bFav"); bf.setAttribute("aria-pressed", st.favOnly);
 }
-function clearFilters(){
-  cur="all"; curT="all"; curA="all"; favOnly=false;
-  document.getElementById("bFav").setAttribute("aria-pressed","false");
-  buildChips(); render();
+function setPanel(open){
+  document.getElementById("panel").hidden = !open;
+  document.getElementById("bFilters").setAttribute("aria-expanded", open);
+  lsSet("madridFiltersOpen", open ? "1" : "0");
 }
+function clearFilters(){ st.p="all"; st.t="all"; st.a="all"; st.favOnly=false; update(); }
 
-/* ---------- Favorites ---------- */
-var FAV = {};
-try{ var _s = localStorage.getItem("madridFavs"); if(_s) FAV = JSON.parse(_s) || {}; }catch(e){}
-function saveFav(){ try{ localStorage.setItem("madridFavs", JSON.stringify(FAV)); }catch(e){} }
-var ITEMS = {}, BYID = {}, ALL = [];
-DATA.forEach(function(c){ c.items.forEach(function(it){ it.id = ALL.length + 1; ALL.push(it); ITEMS[it.n] = it; BYID[it.id] = it; }); });
-var favOnly = false;
-
+/* ---------- List ---------- */
 function favBtn(it){
   var on = !!FAV[it.n];
-  return '<button type="button" class="fav" data-k="'+esc(it.n)+'" aria-pressed="'+on+'">'+(on?'★ Favorite':'☆ Favorite')+'</button>';
+  return '<button type="button" class="btn fav" data-k="'+esc(it.n)+'" aria-pressed="'+on+'">'+(on?'★ Favorite':'☆ Favorite')+'</button>';
 }
-function favNames(){ return Object.keys(FAV).filter(function(k){ return FAV[k] && ITEMS[k]; }); }
-function toggleFav(k){
-  if(FAV[k]) delete FAV[k]; else FAV[k] = true;
-  saveFav();
-  if(favOnly) render(); else { refresh(); drawPins(); }
+function renderList(){
+  var out = "", total = 0;
+  DATA.forEach(function(c){
+    var cards = "";
+    c.items.forEach(function(it){
+      if(!passes(it)) return;
+      total++;
+      var links = favBtn(it) + '<a class="btn" href="'+site(it.n)+'" target="_blank" rel="noopener">Menu / site</a>';
+      it.l.forEach(function(x){ links += '<a class="btn" href="'+esc(x[1])+'" target="_blank" rel="noopener">'+esc(x[0])+'</a>'; });
+      links += '<a class="btn" href="'+maps(it.n)+'" target="_blank" rel="noopener">Google Maps</a>';
+      if(GEO[it.n]) links += '<button type="button" class="btn" data-m="'+it.id+'">Show on map</button>';
+      cards += '<article class="card tier'+it.tier+'" data-id="'+it.id+'"><div class="top"><div><h3 class="name">'+esc(it.n)+'</h3><p class="addr">'+esc(it.a)+'</p></div>'+
+        '<div class="price"><div class="tierbadge" aria-label="Price tier '+(it.tier==="0"?"unknown":it.tier+" of 4")+'">'+tierSym(it.tier)+'</div>'+
+        '<div class="amt">'+rangeText(it)+'</div><div class="conf">'+CONF[it.b]+'</div></div></div>'+
+        (it.f?'<p class="friend"><i>Friend says:</i> '+esc(it.f)+'</p>':'')+
+        '<p class="note">'+esc(it.note)+'</p><div class="links">'+links+'</div></article>';
+    });
+    if(cards) out += '<h2>'+esc(c.cat)+'</h2><p class="cathint">'+esc(c.hint)+'</p>'+cards;
+  });
+  document.getElementById("list").innerHTML = out || '<p class="empty">Nothing matches these filters.</p>';
+  document.getElementById("count").textContent = "Showing "+total+" of "+ALL.length+" places";
 }
-function drawFavs(){
-  var f = favNames(), el = document.getElementById("favs");
-  if(!f.length){ el.innerHTML = '<p class="mapnote">No favorites yet. Tap ☆ Favorite on any card. Favorites show in orange on the map.</p>'; return; }
-  var h = '<div class="favlist">'+f.map(function(n){ return '<span data-r="'+esc(n)+'" title="Remove">★ '+esc(n)+' ✕</span>'; }).join("")+'</div>';
-  if(f.length >= 2){
-    var url = G+"maps/dir/"+f.map(function(n){ return q(n+", Madrid"); }).join("/");
-    h += '<a class="route" href="'+url+'" target="_blank" rel="noopener">Open all favorites as a route in Google Maps →</a>';
-  }
+function renderFavs(){
+  var f = Object.keys(FAV).filter(function(k){ return FAV[k] && ITEMS[k]; }), el = document.getElementById("favs");
+  el.hidden = !f.length;
+  if(!f.length){ el.innerHTML = ""; return; }
+  var h = '<span>Favorites:</span>' + f.map(function(n){ return '<button type="button" class="chip" data-r="'+esc(n)+'" title="Remove from favorites">★ '+esc(n)+' ✕</button>'; }).join("");
+  if(f.length >= 2) h += '<a href="'+G+"maps/dir/"+f.map(function(n){ return q(n+", Madrid"); }).join("/")+'" target="_blank" rel="noopener">Open as a route in Google Maps →</a>';
   el.innerHTML = h;
 }
-function syncButtons(){
-  var btns = document.querySelectorAll(".fav");
-  for(var i=0;i<btns.length;i++){
-    var on = !!FAV[btns[i].getAttribute("data-k")];
-    btns[i].setAttribute("aria-pressed", on);
-    btns[i].textContent = on ? "★ Favorite" : "☆ Favorite";
+
+function update(){ buildChips(); renderList(); renderFavs(); MAP.update(); }
+
+/* ---------- Map ---------- */
+var CENTER = [40.4265, -3.6955];
+function popupHtml(it){
+  var g = GEO[it.n];
+  return '<div class="pop tier'+it.tier+'"><div class="t">'+esc(it.n)+'</div>'+
+    '<div class="m"><span class="tierbadge" style="font-size:13px">'+tierSym(it.tier)+'</span> · '+rangeText(it)+'</div>'+
+    '<div class="m">'+esc(it.a)+(g[2]?' · approximate pin':'')+'</div>'+
+    '<div class="links"><button type="button" class="btn" data-go="'+it.id+'">Go to card</button><a class="btn" href="'+maps(it.n)+'" target="_blank" rel="noopener">Google Maps</a></div></div>';
+}
+function mapKey(){
+  document.getElementById("mapkey").innerHTML = TIERS.map(function(x){ return '<span class="tier'+x.k+'"><span class="dot"></span>'+x.s+' '+x.t+'</span>'; }).join("") +
+    '<span><span class="ring"></span>Street or area only</span><span>★ Favorite</span>';
+}
+
+/* Real map (Leaflet + CARTO tiles). Used on the deployed site. */
+function leafletMap(){
+  var dark = document.documentElement.getAttribute("data-theme")==="dark" ||
+    (document.documentElement.getAttribute("data-theme")!=="light" && matchMedia("(prefers-color-scheme: dark)").matches);
+  var map = L.map("map", {center:CENTER, zoom:15, scrollWheelZoom:false, zoomControl:true});
+  var tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+  document.getElementById("map").classList.toggle("dark-tiles", dark);
+  map.on("focus", function(){ map.scrollWheelZoom.enable(); });
+  map.on("blur", function(){ map.scrollWheelZoom.disable(); });
+  var group = L.markerClusterGroup ? L.markerClusterGroup({
+    showCoverageOnHover:false, maxClusterRadius:36, spiderfyOnMaxZoom:true, disableClusteringAtZoom:17,
+    iconCreateFunction:function(c){ return L.divIcon({html:'<div class="cl">'+c.getChildCount()+'</div>', className:"", iconSize:[34,34]}); }
+  }) : L.layerGroup();
+  map.addLayer(group);
+  var markers = {};
+  function icon(it, hot){
+    var g = GEO[it.n], cls = "mk tier"+it.tier+(g[2]?" approx":"")+(FAV[it.n]?" isfav":"")+(hot?" hot":"");
+    return L.divIcon({className:"", html:'<div class="'+cls+'">'+(FAV[it.n]?"★":"")+'</div>', iconSize:[16,16], iconAnchor:[8,8], popupAnchor:[0,-8]});
   }
+  ALL.forEach(function(it){
+    var g = GEO[it.n]; if(!g) return;
+    var m = L.marker([g[0],g[1]], {icon:icon(it), title:it.n, riseOnHover:true, keyboard:true});
+    m.bindPopup(function(){ return popupHtml(it); }, {maxWidth:260});
+    m.on("mouseover", function(){ hotCard(it.id, true); });
+    m.on("mouseout",  function(){ hotCard(it.id, false); });
+    m.on("popupopen", function(){ hotCard(it.id, true); });
+    m.on("popupclose", function(){ hotCard(it.id, false); });
+    markers[it.id] = m;
+  });
+  var first = true, home = null, back = document.getElementById("backAll");
+  function showBack(){ back.hidden = false; }
+  function reset(){
+    map.closePopup();
+    back.hidden = true;
+    if(home) map.flyToBounds(home, {padding:[30,30], maxZoom:15, duration:.6});
+  }
+  map.on("popupopen", showBack);
+  map.on("zoomend", function(){ if(home && map.getZoom() > map.getBoundsZoom(home, false, L.point(60,60))) showBack(); });
+  function update(){
+    group.clearLayers();
+    var shown = [];
+    ALL.forEach(function(it){ var m = markers[it.id]; if(!m) return; m.setIcon(icon(it)); if(passes(it)){ group.addLayer(m); shown.push(m.getLatLng()); } });
+    if(first){ first = false; if(shown.length){ home = L.latLngBounds(shown); map.fitBounds(home, {padding:[30,30], maxZoom:15}); } }
+  }
+  return {
+    map: map, tiles: tiles,
+    update: update, reset: reset,
+    hot: function(id, on){ var m = markers[id]; if(!m) return; var el = m.getElement(); if(el && el.firstChild) el.firstChild.classList.toggle("hot", on); },
+    show: function(id){
+      var m = markers[id]; if(!m) return;
+      if(!group.hasLayer(m)){ clearFilters(); }
+      if(group.zoomToShowLayer) group.zoomToShowLayer(m, function(){ m.openPopup(); });
+      else { map.setView(m.getLatLng(), 17); m.openPopup(); }
+    },
+    resize: function(){ map.invalidateSize(); }
+  };
 }
-function refresh(){ drawFavs(); syncButtons(); }
 
-/* ---------- Map (same approach as Cambridge Eats: hand-drawn SVG, simple equirectangular projection) ---------- */
-var B = { w:-3.716, e:-3.674, s:40.4135, n:40.4465 }, W = 540, H = 557;
-function px(lng){ return (lng - B.w) / (B.e - B.w) * W; }
-function py(lat){ return (B.n - lat) / (B.n - B.s) * H; }
-function pts(a){ return a.map(function(p){ return px(p[1]).toFixed(1)+","+py(p[0]).toFixed(1); }).join(" "); }
-var selId = null;
-
-function drawBase(){
-  var castellana = [[40.4470,-3.6903],[40.4380,-3.6912],[40.4300,-3.6908],[40.4253,-3.6905],[40.4193,-3.6930],[40.4153,-3.6942],[40.4130,-3.6935]];
-  var granVia    = [[40.4190,-3.6965],[40.4199,-3.7013],[40.4201,-3.7058],[40.4222,-3.7090],[40.4236,-3.7122]];
-  var alcala     = [[40.4169,-3.7035],[40.4185,-3.6975],[40.4193,-3.6930],[40.4199,-3.6888],[40.4222,-3.6820],[40.4245,-3.6755]];
-  var bulevares  = [[40.4253,-3.6905],[40.4277,-3.6955],[40.4289,-3.7027],[40.4298,-3.7090],[40.4303,-3.7160]];
-  var velazquez  = [[40.4205,-3.6838],[40.4300,-3.6838],[40.4400,-3.6842],[40.4470,-3.6845]];
-  var jorgeJuan  = [[40.4224,-3.6895],[40.4230,-3.6860],[40.4238,-3.6805],[40.4245,-3.6760]];
-  var ponzano    = [[40.4380,-3.7005],[40.4440,-3.7018]];
-  var engracia   = [[40.4277,-3.6955],[40.4330,-3.6985],[40.4400,-3.6988],[40.4470,-3.6992]];
-  var retiro     = [[40.4202,-3.6878],[40.4198,-3.6815],[40.4183,-3.6770],[40.4135,-3.6762],[40.4135,-3.6900],[40.4170,-3.6890]];
+/* Sketch map: fallback when map tiles or Leaflet can't load (e.g. inside a Claude artifact). Same idea as Cambridge Eats. */
+function sketchMap(){
+  var B = { w:-3.716, e:-3.674, s:40.4135, n:40.4465 }, W = 540, H = 557, sel = null;
+  function px(lng){ return (lng - B.w) / (B.e - B.w) * W; }
+  function py(lat){ return (B.n - lat) / (B.n - B.s) * H; }
+  function pts(a){ return a.map(function(p){ return px(p[1]).toFixed(1)+","+py(p[0]).toFixed(1); }).join(" "); }
+  var roads = [
+    [[40.4470,-3.6903],[40.4380,-3.6912],[40.4300,-3.6908],[40.4253,-3.6905],[40.4193,-3.6930],[40.4153,-3.6942],[40.4130,-3.6935]],
+    [[40.4190,-3.6965],[40.4199,-3.7013],[40.4201,-3.7058],[40.4222,-3.7090],[40.4236,-3.7122]],
+    [[40.4169,-3.7035],[40.4185,-3.6975],[40.4193,-3.6930],[40.4199,-3.6888],[40.4222,-3.6820],[40.4245,-3.6755]],
+    [[40.4253,-3.6905],[40.4277,-3.6955],[40.4289,-3.7027],[40.4298,-3.7090],[40.4303,-3.7160]]
+  ];
+  var minor = [[[40.4205,-3.6838],[40.4470,-3.6845]],[[40.4224,-3.6895],[40.4230,-3.6860],[40.4245,-3.6760]],[[40.4380,-3.7005],[40.4440,-3.7018]],[[40.4277,-3.6955],[40.4330,-3.6985],[40.4470,-3.6992]]];
+  var retiro = [[40.4202,-3.6878],[40.4198,-3.6815],[40.4183,-3.6770],[40.4135,-3.6762],[40.4135,-3.6900],[40.4170,-3.6890]];
   var hoods = [["Chamberí",40.4372,-3.7085],["Salamanca",40.4320,-3.6790],["Chueca",40.4215,-3.6990],["Malasaña",40.4258,-3.7060],["Sol · Centro",40.4148,-3.7060],["Almagro",40.4320,-3.6935]];
-  var h = '<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="var(--bg)"/>';
-  h += '<polygon class="park" points="'+pts(retiro)+'"/>';
+  var h = '<svg class="sketch" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Sketch map of central Madrid">';
+  h += '<rect width="'+W+'" height="'+H+'" fill="var(--bg)"/><polygon class="park" points="'+pts(retiro)+'"/>';
   h += '<text class="plabel" x="'+px(-3.6830)+'" y="'+py(40.4165)+'" text-anchor="middle">Retiro</text>';
-  [ponzano, engracia, jorgeJuan, velazquez].forEach(function(r){ h += '<polyline class="road minor" points="'+pts(r)+'"/>'; });
-  [castellana, granVia, alcala, bulevares].forEach(function(r){ h += '<polyline class="road" points="'+pts(r)+'"/>'; });
+  minor.forEach(function(r){ h += '<polyline class="road minor" points="'+pts(r)+'"/>'; });
+  roads.forEach(function(r){ h += '<polyline class="road" points="'+pts(r)+'"/>'; });
   h += '<text class="rlabel" x="'+(px(-3.6908)+7)+'" y="'+py(40.4420)+'">CASTELLANA</text>';
-  h += '<text class="rlabel" x="'+(px(-3.6930)+7)+'" y="'+py(40.4210)+'">RECOLETOS</text>';
-  h += '<text class="rlabel" x="'+px(-3.7075)+'" y="'+(py(40.4211)-6)+'" text-anchor="middle" transform="rotate(-24 '+px(-3.7075)+' '+(py(40.4211)-6)+')">GRAN VÍA</text>';
-  h += '<text class="rlabel" x="'+px(-3.6795)+'" y="'+(py(40.4232)+12)+'" text-anchor="middle" transform="rotate(-20 '+px(-3.6795)+' '+(py(40.4232)+12)+')">ALCALÁ</text>';
-  h += '<text class="rlabel" x="'+px(-3.7125)+'" y="'+(py(40.4300)-6)+'" text-anchor="middle">A. AGUILERA</text>';
   h += '<text class="rlabel" x="'+(px(-3.6840)+6)+'" y="'+py(40.4440)+'">VELÁZQUEZ</text>';
-  h += '<text class="rlabel" x="'+px(-3.6790)+'" y="'+(py(40.4242)-8)+'" text-anchor="middle" transform="rotate(-10 '+px(-3.6790)+' '+(py(40.4242)-8)+')">JORGE JUAN</text>';
+  h += '<text class="rlabel" x="'+px(-3.7125)+'" y="'+(py(40.4300)-6)+'" text-anchor="middle">A. AGUILERA</text>';
   hoods.forEach(function(x){ h += '<text class="hlabel" x="'+px(x[2])+'" y="'+py(x[1])+'" text-anchor="middle">'+x[0]+'</text>'; });
-  h += '<g id="pins"></g><g id="tipg"></g>';
-  document.getElementById("map").innerHTML = h;
+  h += '<g id="pins"></g><g id="tipg"></g></svg>';
+  var host = document.getElementById("map"); host.innerHTML = h;
+  host.style.height = "auto"; host.style.minHeight = "0";
+  var svg = host.querySelector("svg");
+  function tip(id){
+    var tg = document.getElementById("tipg"); if(!id){ tg.innerHTML=""; return; }
+    var it = BYID[id], g = GEO[it.n]; if(!g) return;
+    var x = px(g[1]), y = py(g[0]), an = x > W-120 ? "end" : x < 120 ? "start" : "middle";
+    tg.innerHTML = '<text class="tip" x="'+x+'" y="'+(y-13)+'" text-anchor="'+an+'">'+esc(it.n)+'</text>';
+  }
+  function update(){
+    document.getElementById("pins").innerHTML = ALL.filter(function(it){ return GEO[it.n] && passes(it); }).map(function(it){
+      var g = GEO[it.n];
+      return '<circle class="tier'+it.tier+(g[2]?" approx":"")+'" data-id="'+it.id+'" cx="'+px(g[1]).toFixed(1)+'" cy="'+py(g[0]).toFixed(1)+'" r="'+(FAV[it.n]?8:6)+'" tabindex="0" role="button" aria-label="'+esc(it.n)+'"><title>'+esc(it.n)+'</title></circle>';
+    }).join("");
+  }
+  function hot(id, on){
+    var c = svg.querySelector('circle[data-id="'+id+'"]'); if(c) c.classList.toggle("hot", on || id===sel);
+    tip(on ? id : sel);
+  }
+  svg.addEventListener("mouseover", function(e){ var id = e.target.getAttribute && e.target.getAttribute("data-id"); if(id){ hot(+id,true); hotCard(+id,true); } });
+  svg.addEventListener("mouseout",  function(e){ var id = e.target.getAttribute && e.target.getAttribute("data-id"); if(id){ hot(+id,false); hotCard(+id,false); } });
+  function pick(e){ var id = e.target.getAttribute && e.target.getAttribute("data-id"); if(id){ api.show(+id); goCard(+id); } else api.reset(); }
+  svg.addEventListener("click", pick);
+  svg.addEventListener("keydown", function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); pick(e); } });
+  var api = {
+    update: update, hot: hot, resize: function(){},
+    reset: function(){ var prev = sel; sel = null; if(prev) hot(prev,false); document.getElementById("backAll").hidden = true; },
+    show: function(id){ var prev = sel; sel = id; if(prev) hot(prev,false); if(!passes(BYID[id])) clearFilters(); hot(id, true); document.getElementById("backAll").hidden = false; }
+  };
+  return api;
 }
 
-function drawPins(){
-  var placed = ALL.filter(function(it){ return GEO[it.n]; });
-  var shown = placed.filter(passes);
-  var on = {}; shown.forEach(function(it){ on[it.id] = 1; });
-  // dimmed pins first so matching pins sit on top
-  var order = placed.slice().sort(function(a,b){ return (on[a.id]?1:0) - (on[b.id]?1:0); });
-  document.getElementById("pins").innerHTML = order.map(function(it){
-    var g = GEO[it.n], cls = "pin" + (g[2] ? " approx" : "") + (FAV[it.n] ? " isfav" : "") + (on[it.id] ? "" : " off") + (it.id===selId ? " hot" : "");
-    return '<circle class="'+cls+'" data-id="'+it.id+'" cx="'+px(g[1]).toFixed(1)+'" cy="'+py(g[0]).toFixed(1)+'" r="'+(it.id===selId?8:6)+'" tabindex="'+(on[it.id]?0:-1)+'" role="button" aria-label="'+esc(it.n)+'"><title>'+esc(it.n)+(g[2]?" (approximate)":"")+'</title></circle>';
-  }).join("");
-  var visible = ALL.filter(passes).length;
-  document.getElementById("mapcount").textContent = shown.length+" of "+visible+" places on the map";
-}
-
-function tip(id){
-  var tg = document.getElementById("tipg");
-  if(!id){ tg.innerHTML = ""; return; }
-  var it = BYID[id], g = GEO[it.n]; if(!g) return;
-  var x = px(g[1]), y = py(g[0]);
-  var anchor = x > W - 120 ? "end" : x < 120 ? "start" : "middle";
-  tg.innerHTML = '<text class="tip" x="'+x+'" y="'+(y-13)+'" text-anchor="'+anchor+'">'+esc(it.n)+'</text>';
-}
-function hot(id, on){
+function hotCard(id, on){
   var card = document.querySelector('.card[data-id="'+id+'"]');
-  var pin = document.querySelector('#map circle.pin[data-id="'+id+'"]');
-  if(card) card.classList.toggle("hot", on || id===selId);
-  if(pin){ var h = on || id===selId; pin.classList.toggle("hot", h); pin.setAttribute("r", h ? 8 : 6); }
-  tip(on ? id : selId);
-}
-function select(id){
-  var prev = selId; selId = id;
-  if(prev && prev!==id) hot(prev, false);
-  var it = BYID[id], box = document.getElementById("sel");
-  box.hidden = false;
-  box.innerHTML = '<div class="t">'+esc(it.n)+'</div><div class="m">'+esc(it.a)+' · '+priceText(it)+(GEO[it.n][2]?' · pin is approximate':'')+'</div>'+
-    '<div class="links"><button type="button" data-go="'+id+'">Go to card</button><a href="'+maps(it.n)+'" target="_blank" rel="noopener">Google Maps</a></div>';
-  hot(id, true);
+  if(card) card.classList.toggle("hot", on);
 }
 function smooth(){ return matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"; }
 function goCard(id){
   var card = document.querySelector('.card[data-id="'+id+'"]');
-  if(card) card.scrollIntoView({behavior:smooth(), block:"center"});
-}
-function pinClick(el){
-  var id = +el.getAttribute("data-id");
-  if(el.classList.contains("off")) clearFilters();
-  select(id);
-  if(matchMedia("(min-width: 901px)").matches) goCard(id);
-}
-function wireMap(){
-  var map = document.getElementById("map"), list = document.getElementById("list");
-  map.addEventListener("mouseover", function(e){ if(e.target.classList.contains("pin")) hot(+e.target.getAttribute("data-id"), true); });
-  map.addEventListener("mouseout",  function(e){ if(e.target.classList.contains("pin")) hot(+e.target.getAttribute("data-id"), false); });
-  map.addEventListener("click", function(e){ if(e.target.classList.contains("pin")) pinClick(e.target); });
-  map.addEventListener("keydown", function(e){ if((e.key==="Enter"||e.key===" ") && e.target.classList.contains("pin")){ e.preventDefault(); pinClick(e.target); } });
-  list.addEventListener("mouseover", function(e){ var c = e.target.closest(".card"); if(c) hot(+c.getAttribute("data-id"), true); });
-  list.addEventListener("mouseout",  function(e){ var c = e.target.closest(".card"); if(c && !c.contains(e.relatedTarget)) hot(+c.getAttribute("data-id"), false); });
+  if(!card){ clearFilters(); card = document.querySelector('.card[data-id="'+id+'"]'); }
+  if(card){ card.scrollIntoView({behavior:smooth(), block:"center"}); hotCard(id,true); setTimeout(function(){ hotCard(id,false); }, 1600); }
 }
 
+var MAP = {update:function(){}, hot:function(){}, show:function(){}, reset:function(){}, resize:function(){}};
+function startMap(){
+  if(window.L){
+    try{
+      var real = leafletMap(), loaded = false, errs = 0;
+      MAP = real;
+      real.tiles.on("tileload", function(){ loaded = true; });
+      real.tiles.on("tileerror", function(){ errs++; });
+      // If no map tile has loaded after a few seconds (tiles blocked), switch to the sketch map
+      setTimeout(function(){ if(!loaded && errs){ real.map.remove(); MAP = sketchMap(); MAP.update(); } }, 4000);
+      return;
+    }catch(e){ document.getElementById("map").innerHTML = ""; }
+  }
+  MAP = sketchMap(); // only when the map library can't load (e.g. inside a Claude artifact)
+}
+
+/* ---------- Events ---------- */
 document.addEventListener("click", function(e){
   var t = e.target; if(!t.closest) return;
-  var fb = t.closest(".fav"); if(fb){ toggleFav(fb.getAttribute("data-k")); return; }
-  var rm = t.closest("[data-r]"); if(rm){ toggleFav(rm.getAttribute("data-r")); return; }
-  var om = t.closest("[data-m]");
-  if(om){ var id = +om.getAttribute("data-m"); select(id); document.getElementById("mapcol").scrollIntoView({behavior:smooth(), block:"start"}); return; }
-  var go = t.closest("[data-go]"); if(go){ goCard(+go.getAttribute("data-go")); return; }
+  var c = t.closest("[data-f]");
+  if(c){ st[c.getAttribute("data-f")] = c.getAttribute("data-v"); update(); return; }
+  var fb = t.closest(".fav");
+  if(fb){ var k = fb.getAttribute("data-k"); if(FAV[k]) delete FAV[k]; else FAV[k]=true; saveFav(); if(st.favOnly) update(); else { var on=!!FAV[k]; fb.setAttribute("aria-pressed",on); fb.textContent = on?"★ Favorite":"☆ Favorite"; renderFavs(); MAP.update(); } return; }
+  var rm = t.closest("[data-r]");
+  if(rm){ delete FAV[rm.getAttribute("data-r")]; saveFav(); update(); return; }
+  var sm = t.closest("[data-m]");
+  if(sm){ var id = +sm.getAttribute("data-m"); if(matchMedia("(max-width: 900px)").matches) document.getElementById("mapcol").scrollIntoView({behavior:smooth(), block:"start"}); MAP.show(id); return; }
+  var go = t.closest("[data-go]");
+  if(go){ goCard(+go.getAttribute("data-go")); return; }
 });
+var list = document.getElementById("list");
+list.addEventListener("mouseover", function(e){ var c = e.target.closest(".card"); if(c) MAP.hot(+c.getAttribute("data-id"), true); });
+list.addEventListener("mouseout",  function(e){ var c = e.target.closest(".card"); if(c && !c.contains(e.relatedTarget)) MAP.hot(+c.getAttribute("data-id"), false); });
+document.getElementById("bFilters").onclick = function(){ setPanel(document.getElementById("panel").hidden); };
+document.getElementById("bFav").onclick = function(){ st.favOnly = !st.favOnly; update(); };
 document.getElementById("bClear").onclick = clearFilters;
-document.getElementById("bFav").onclick = function(){
-  favOnly = !favOnly; this.setAttribute("aria-pressed", favOnly); render();
-};
+document.getElementById("backAll").onclick = function(){ MAP.reset(); };
+document.addEventListener("keydown", function(e){ if(e.key==="Escape") MAP.reset(); });
 
-/* Floating "Map" button on phones when the map scrolls out of view */
 var fab = document.getElementById("fab");
 fab.onclick = function(){ document.getElementById("mapcol").scrollIntoView({behavior:smooth(), block:"start"}); };
 if("IntersectionObserver" in window){
-  new IntersectionObserver(function(en){ fab.hidden = en[0].isIntersecting; }).observe(document.getElementById("map"));
+  new IntersectionObserver(function(en){ fab.hidden = en[0].isIntersecting; }).observe(document.getElementById("mapcol"));
 }
 
-drawBase(); buildChips(); render(); wireMap();
+setPanel(lsGet("madridFiltersOpen")==="1");
+mapKey();
+buildChips(); renderList(); renderFavs();
+startMap(); MAP.update();
 </script>
 </body>
 </html>
