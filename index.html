@@ -59,6 +59,39 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--fav);outline-offset
 .chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--ink);font:inherit;font-size:13px;cursor:pointer}
 .chip[aria-pressed="true"]{background:var(--chip-on);color:var(--chip-on-ink);border-color:var(--chip-on)}
 .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:var(--tc,var(--t0))}
+/* Trip planner */
+.trip{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:14px;margin:4px 0 14px}
+.triphead{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 14px;margin-bottom:12px}
+.triphead h2{margin:0;font-size:17px;letter-spacing:-.01em;text-transform:none;color:var(--ink)}
+.triphead .sum{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.triphead .sum b{color:var(--ink)}
+.tripact{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.days{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.day{display:grid;gap:6px;align-content:start}
+.dayname{font-size:12px;font-weight:650;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.slot{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;min-height:58px;display:grid;gap:2px;align-content:start}
+.slot .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.slot.open{border-style:dashed;color:var(--muted)}
+.slot.booked{border-left:4px solid var(--tc)}
+.slot button.go{all:unset;cursor:pointer;font-weight:650;color:var(--ink)}
+.slot button.go:hover{text-decoration:underline}
+.slot button.go:focus-visible{outline:2px solid var(--fav);outline-offset:2px}
+.slot .tm{font-variant-numeric:tabular-nums;color:var(--muted)}
+.slot.clash{border-color:var(--t4)}
+.slot .warn{color:var(--t4);font-size:12px}
+.todo{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:12px;font-size:13px;color:var(--muted)}
+.todo .chip{color:var(--ink)}
+.copied{font-size:12px;color:var(--t1)}
+.linkout{width:100%;font:12px ui-monospace,Menlo,monospace;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);margin-top:8px}
+/* Booking on cards */
+.bookbadge{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:4px 10px;border-radius:999px;background:var(--t1);color:#fff;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.bookform{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.bookform label{display:grid;gap:3px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.bookform input,.bookform select{height:34px;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;font-size:13px;text-transform:none;letter-spacing:0}
+.bookform .acts{display:flex;gap:6px;align-items:end;grid-column:1/-1}
+.btn.booked{border-color:var(--t1);color:var(--t1)}
+.mk.isbooked{width:24px;height:24px;margin:-2px 0 0 -2px;font-size:13px;font-weight:700}
+@media (max-width:900px){ .days{grid-template-columns:repeat(2,minmax(0,1fr))} }
 .favrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding-block:10px;border-bottom:1px solid var(--line);font-size:13px}
 .favrow .chip{border-color:var(--fav);color:var(--fav)}
 .favrow a{color:var(--ink);margin-left:4px}
@@ -151,9 +184,12 @@ footer{font-size:12px;color:var(--muted);margin-top:28px}
   <h1>Madrid food guide</h1>
   <p class="sub">A friend's shortlist of Madrid restaurants, with prices per person, links and a map.</p>
 
+  <section class="trip" id="trip" aria-label="Your trip"></section>
+
   <div class="toolbar">
     <button type="button" class="btn" id="bFilters" aria-expanded="false" aria-controls="panel">Filters <span class="n" id="nActive"></span></button>
     <button type="button" class="btn" id="bFav" aria-pressed="false">★ Favorites only</button>
+    <button type="button" class="btn" id="bBooked" aria-pressed="false">✓ Booked only</button>
     <button type="button" class="linkbtn" id="bClear" hidden>Clear filters</button>
     <span class="count" id="count"></span>
   </div>
@@ -346,7 +382,7 @@ var ITEMS = {}, BYID = {}, ALL = [];
 DATA.forEach(function(c){ c.items.forEach(function(it){ it.id = ALL.length+1; it.tier = tierOf(it); ALL.push(it); ITEMS[it.n]=it; BYID[it.id]=it; }); });
 
 /* ---------- State ---------- */
-var st = {p:"all", t:"all", a:"all", favOnly:false};
+var st = {p:"all", t:"all", a:"all", favOnly:false, bookedOnly:false};
 var FAV = {};
 function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
 function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
@@ -358,6 +394,7 @@ function passes(it){
   if(st.t!=="all" && TYPE[it.n]!==st.t) return false;
   if(st.a!=="all" && AREA[it.n]!==st.a) return false;
   if(st.favOnly && !FAV[it.n]) return false;
+  if(st.bookedOnly && !BOOK[it.n]) return false;
   return true;
 }
 function activeCount(){ return (st.p!=="all")+(st.t!=="all")+(st.a!=="all"); }
@@ -375,7 +412,8 @@ function buildChips(){
   chipRow("chipsA", [{k:"all",t:"All"}].concat(AREA_ORDER.map(function(t){ return {k:t,t:t}; })), "a");
   var n = activeCount();
   document.getElementById("nActive").textContent = n ? n : "";
-  document.getElementById("bClear").hidden = !(n || st.favOnly);
+  document.getElementById("bClear").hidden = !(n || st.favOnly || st.bookedOnly);
+  document.getElementById("bBooked").setAttribute("aria-pressed", st.bookedOnly);
   var bf = document.getElementById("bFav"); bf.setAttribute("aria-pressed", st.favOnly);
 }
 function setPanel(open){
@@ -383,7 +421,7 @@ function setPanel(open){
   document.getElementById("bFilters").setAttribute("aria-expanded", open);
   lsSet("madridFiltersOpen", open ? "1" : "0");
 }
-function clearFilters(){ st.p="all"; st.t="all"; st.a="all"; st.favOnly=false; update(); }
+function clearFilters(){ st.p="all"; st.t="all"; st.a="all"; st.favOnly=false; st.bookedOnly=false; update(); }
 
 /* ---------- List ---------- */
 function favBtn(it){
@@ -401,11 +439,13 @@ function renderList(){
       it.l.forEach(function(x){ links += '<a class="btn" href="'+esc(x[1])+'" target="_blank" rel="noopener">'+esc(x[0])+'</a>'; });
       links += '<a class="btn" href="'+maps(it.n)+'" target="_blank" rel="noopener">Google Maps</a>';
       if(GEO[it.n]) links += '<button type="button" class="btn" data-m="'+it.id+'">Show on map</button>';
+      links += BOOK[it.n] ? '<button type="button" class="btn booked" data-book="'+it.id+'">✓ Edit booking</button>' : '<button type="button" class="btn" data-book="'+it.id+'">Mark as booked</button>';
       cards += '<article class="card tier'+it.tier+'" data-id="'+it.id+'"><div class="top"><div><h3 class="name">'+esc(it.n)+'</h3><p class="addr">'+esc(it.a)+'</p></div>'+
         '<div class="price"><div class="tierbadge" aria-label="Price tier '+(it.tier==="0"?"unknown":it.tier+" of 4")+'">'+tierSym(it.tier)+'</div>'+
         '<div class="amt">'+rangeText(it)+'</div><div class="conf">'+CONF[it.b]+'</div></div></div>'+
         (it.f?'<p class="friend"><i>Friend says:</i> '+esc(it.f)+'</p>':'')+
-        '<p class="note">'+esc(it.note)+'</p><div class="links">'+links+'</div></article>';
+        (BOOK[it.n]?'<div class="bookbadge">✓ Booked · '+esc(bookText(BOOK[it.n]))+'</div>':'')+
+        '<p class="note">'+esc(it.note)+'</p><div class="links">'+links+'</div><div class="bookslot"></div></article>';
     });
     if(cards) out += '<h2>'+esc(c.cat)+'</h2><p class="cathint">'+esc(c.hint)+'</p>'+cards;
   });
@@ -421,7 +461,90 @@ function renderFavs(){
   el.innerHTML = h;
 }
 
-function update(){ buildChips(); renderList(); renderFavs(); MAP.update(); }
+/* ---------- Bookings & trip ---------- */
+var TRIP = [
+  {d:"2026-10-29", l:"Thu Oct 29", meals:["lunch","dinner"]},
+  {d:"2026-10-30", l:"Fri Oct 30", meals:["lunch","dinner"]},
+  {d:"2026-10-31", l:"Sat Oct 31", meals:["lunch","dinner"]},
+  {d:"2026-11-01", l:"Sun Nov 1",  meals:["lunch"]}
+];
+var BOOK = {};
+try{ BOOK = JSON.parse(lsGet("madridBookings")||"{}") || {}; }catch(e){ BOOK = {}; }
+function saveBook(){ lsSet("madridBookings", JSON.stringify(BOOK)); }
+function mealOf(t){ var h = parseInt((t||"21:00").split(":")[0],10); return h < 17 ? "lunch" : "dinner"; }
+function dayLabel(d){ for(var i=0;i<TRIP.length;i++) if(TRIP[i].d===d) return TRIP[i].l; var x = new Date(d+"T12:00:00"); return isNaN(x) ? d : x.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}); }
+function bookText(b){ return dayLabel(b.d)+" · "+b.t+(b.p?" · "+b.p+" ppl":""); }
+
+/* Share bookings + favorites between devices with a link (#trip=...) */
+function encodeState(){ var j = JSON.stringify({b:BOOK,f:FAV}); return btoa(unescape(encodeURIComponent(j))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
+function importFromHash(){
+  var h = location.hash; if(h.indexOf("#trip=")!==0) return;
+  try{
+    var b64 = h.slice(6).replace(/-/g,"+").replace(/_/g,"/"); while(b64.length%4) b64 += "=";
+    var o = JSON.parse(decodeURIComponent(escape(atob(b64))));
+    if(o && o.b){ BOOK = o.b; saveBook(); }
+    if(o && o.f){ FAV = o.f; saveFav(); }
+  }catch(e){}
+  try{ history.replaceState(null, "", location.pathname); }catch(e){}
+}
+
+function renderTrip(){
+  var bySlot = {}, other = [];
+  Object.keys(BOOK).forEach(function(n){
+    if(!ITEMS[n]) return;
+    var b = BOOK[n], k = b.d+"|"+mealOf(b.t);
+    var inTrip = TRIP.some(function(x){ return x.d===b.d; });
+    if(inTrip){ (bySlot[k] = bySlot[k] || []).push(n); } else other.push(n);
+  });
+  var total = 0, filled = 0;
+  var days = TRIP.map(function(day){
+    var meals = day.meals.slice();
+    if(day.meals.indexOf("dinner")<0 && bySlot[day.d+"|dinner"]) meals.push("dinner");
+    return '<div class="day"><div class="dayname">'+day.l+'</div>'+meals.map(function(m){
+      var list = bySlot[day.d+"|"+m] || [];
+      if(day.meals.indexOf(m)>=0){ total++; if(list.length) filled++; }
+      var lbl = '<span class="lbl">'+(m==="lunch"?"Lunch":"Dinner")+'</span>';
+      if(!list.length) return '<div class="slot open">'+lbl+'<span>Not booked yet</span></div>';
+      list.sort(function(a,b){ return BOOK[a].t < BOOK[b].t ? -1 : 1; });
+      var it0 = ITEMS[list[0]];
+      return '<div class="slot booked tier'+it0.tier+(list.length>1?" clash":"")+'">'+lbl+list.map(function(n){
+        var it = ITEMS[n], b = BOOK[n];
+        return '<button type="button" class="go" data-go="'+it.id+'">'+esc(n)+'</button><span class="tm">'+esc(b.t)+(b.p?" · "+esc(b.p)+" ppl":"")+(b.note?" · "+esc(b.note):"")+'</span>';
+      }).join("")+(list.length>1?'<span class="warn">Two bookings for this meal</span>':'')+'</div>';
+    }).join("")+'</div>';
+  }).join("");
+  var favTodo = Object.keys(FAV).filter(function(n){ return FAV[n] && ITEMS[n] && !BOOK[n]; });
+  var h = '<div class="triphead"><div><h2>Your trip · Thu Oct 29 – Sun Nov 1</h2>'+
+    '<div class="sum"><b>'+filled+' of '+total+'</b> meals booked · '+(total-filled)+' still open</div></div>'+
+    '<div class="tripact"><button type="button" class="btn" id="bShare">Copy link with my bookings</button><span id="shareMsg" class="copied" aria-live="polite"></span></div></div>'+
+    '<div class="days">'+days+'</div>';
+  if(other.length) h += '<div class="todo">Other dates: '+other.map(function(n){ return '<button type="button" class="chip" data-go="'+ITEMS[n].id+'">'+esc(n)+' · '+esc(bookText(BOOK[n]))+'</button>'; }).join("")+'</div>';
+  h += '<div class="todo">'+(favTodo.length
+      ? 'Favorites not booked yet: '+favTodo.map(function(n){ return '<button type="button" class="chip" data-go="'+ITEMS[n].id+'">☆ '+esc(n)+'</button>'; }).join("")
+      : (Object.keys(BOOK).length ? 'Every favorite is booked.' : 'Tap “Mark as booked” on any restaurant to add it here. Star favorites to keep a to-book list.'))+'</div>';
+  h += '<div id="shareBox"></div>';
+  document.getElementById("trip").innerHTML = h;
+}
+
+function openBookForm(id){
+  var it = BYID[id], card = document.querySelector('.card[data-id="'+id+'"]'); if(!card) return;
+  var slot = card.querySelector(".bookslot");
+  if(slot.innerHTML){ slot.innerHTML = ""; return; }
+  var b = BOOK[it.n] || {d:TRIP[0].d, t:"21:00", p:"", note:""};
+  var opts = TRIP.map(function(x){ return '<option value="'+x.d+'"'+(x.d===b.d?" selected":"")+'>'+x.l+'</option>'; }).join("");
+  if(!TRIP.some(function(x){ return x.d===b.d; })) opts += '<option value="'+esc(b.d)+'" selected>'+esc(dayLabel(b.d))+'</option>';
+  slot.innerHTML = '<form class="bookform" data-bf="'+id+'">'+
+    '<label>Day<select id="bd'+id+'" name="d">'+opts+'</select></label>'+
+    '<label>Time<input id="bt'+id+'" name="t" type="time" value="'+esc(b.t)+'" required></label>'+
+    '<label>People<input id="bp'+id+'" name="p" type="number" min="1" max="20" value="'+esc(b.p||"")+'" placeholder="2"></label>'+
+    '<label>Note<input id="bn'+id+'" name="note" type="text" value="'+esc(b.note||"")+'" placeholder="Confirmation #, under whose name…"></label>'+
+    '<div class="acts"><button type="submit" class="btn">Save booking</button>'+
+    (BOOK[it.n]?'<button type="button" class="btn" data-unbook="'+id+'">Remove booking</button>':'')+
+    '<button type="button" class="btn" data-bookcancel="'+id+'">Cancel</button></div></form>';
+  var first = slot.querySelector("select"); if(first) first.focus();
+}
+
+function update(){ buildChips(); renderList(); renderFavs(); renderTrip(); MAP.update(); }
 
 /* ---------- Map ---------- */
 var CENTER = [40.4265, -3.6955];
@@ -455,8 +578,8 @@ function leafletMap(){
   map.addLayer(group);
   var markers = {};
   function icon(it, hot){
-    var g = GEO[it.n], cls = "mk tier"+it.tier+(g[2]?" approx":"")+(FAV[it.n]?" isfav":"")+(hot?" hot":"");
-    return L.divIcon({className:"", html:'<div class="'+cls+'">'+(FAV[it.n]?"★":"")+'</div>', iconSize:[20,20], iconAnchor:[10,10], popupAnchor:[0,-10]});
+    var g = GEO[it.n], cls = "mk tier"+it.tier+(g[2]?" approx":"")+(BOOK[it.n]?" isbooked":FAV[it.n]?" isfav":"")+(hot?" hot":"");
+    return L.divIcon({className:"", html:'<div class="'+cls+'">'+(BOOK[it.n]?"✓":FAV[it.n]?"★":"")+'</div>', iconSize:[20,20], iconAnchor:[10,10], popupAnchor:[0,-10]});
   }
   ALL.forEach(function(it){
     var g = GEO[it.n]; if(!g) return;
@@ -588,7 +711,19 @@ document.addEventListener("click", function(e){
   var c = t.closest("[data-f]");
   if(c){ st[c.getAttribute("data-f")] = c.getAttribute("data-v"); update(); return; }
   var fb = t.closest(".fav");
-  if(fb){ var k = fb.getAttribute("data-k"); if(FAV[k]) delete FAV[k]; else FAV[k]=true; saveFav(); if(st.favOnly) update(); else { var on=!!FAV[k]; fb.setAttribute("aria-pressed",on); fb.textContent = on?"★ Favorite":"☆ Favorite"; renderFavs(); MAP.update(); } return; }
+  if(fb){ var k = fb.getAttribute("data-k"); if(FAV[k]) delete FAV[k]; else FAV[k]=true; saveFav(); if(st.favOnly) update(); else { var on=!!FAV[k]; fb.setAttribute("aria-pressed",on); fb.textContent = on?"★ Favorite":"☆ Favorite"; renderFavs(); renderTrip(); MAP.update(); } return; }
+  var bk = t.closest("[data-book]");
+  if(bk){ openBookForm(+bk.getAttribute("data-book")); return; }
+  var ub = t.closest("[data-unbook]");
+  if(ub){ delete BOOK[BYID[+ub.getAttribute("data-unbook")].n]; saveBook(); update(); return; }
+  var bc = t.closest("[data-bookcancel]");
+  if(bc){ var sl = bc.closest(".bookslot"); if(sl) sl.innerHTML = ""; return; }
+  if(t.id==="bShare"){
+    var url = location.origin + location.pathname + "#trip=" + encodeState(), msg = document.getElementById("shareMsg");
+    var show = function(){ var box = document.getElementById("shareBox"); box.innerHTML = '<input class="linkout" id="shareLink" readonly value="'+esc(url)+'">'; var i = box.querySelector("input"); i.focus(); i.select(); msg.textContent = "Select and copy this link"; };
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(function(){ msg.textContent = "Copied. Open it on your phone to load your bookings."; }, show); } else show();
+    return;
+  }
   var rm = t.closest("[data-r]");
   if(rm){ delete FAV[rm.getAttribute("data-r")]; saveFav(); update(); return; }
   var sm = t.closest("[data-m]");
@@ -601,6 +736,15 @@ list.addEventListener("mouseover", function(e){ var c = e.target.closest(".card"
 list.addEventListener("mouseout",  function(e){ var c = e.target.closest(".card"); if(c && !c.contains(e.relatedTarget)) MAP.hot(+c.getAttribute("data-id"), false); });
 document.getElementById("bFilters").onclick = function(){ setPanel(document.getElementById("panel").hidden); };
 document.getElementById("bFav").onclick = function(){ st.favOnly = !st.favOnly; update(); };
+document.getElementById("bBooked").onclick = function(){ st.bookedOnly = !st.bookedOnly; update(); };
+document.addEventListener("submit", function(e){
+  var f = e.target.closest && e.target.closest("[data-bf]"); if(!f) return;
+  e.preventDefault();
+  var it = BYID[+f.getAttribute("data-bf")];
+  BOOK[it.n] = {d:f.elements.d.value, t:f.elements.t.value || "21:00", p:f.elements.p.value, note:f.elements.note.value.trim()};
+  saveBook(); update();
+  var card = document.querySelector('.card[data-id="'+it.id+'"]'); if(card) card.scrollIntoView({block:"nearest"});
+});
 document.getElementById("bClear").onclick = clearFilters;
 document.getElementById("backAll").onclick = function(){ MAP.reset(); };
 document.addEventListener("keydown", function(e){ if(e.key==="Escape") MAP.reset(); });
@@ -613,7 +757,8 @@ if("IntersectionObserver" in window){
 
 setPanel(lsGet("madridFiltersOpen")==="1");
 mapKey();
-buildChips(); renderList(); renderFavs();
+importFromHash();
+buildChips(); renderList(); renderFavs(); renderTrip();
 startMap(); MAP.update();
 </script>
 </body>
