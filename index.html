@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Madrid Food Guide</title>
+<meta name="description" content="A shortlist of Madrid restaurants from a friend's recommendations, with prices, links and a map.">
+<style>
+/* Layout: header, legend and filters on top; restaurant cards on the left, sticky sketch map of central Madrid on the right; stacks (map first) on phones. */
+:root{
+  --bg:#faf7f2;--card:#ffffff;--ink:#1f1b16;--muted:#6b6258;--line:#e7dfd3;
+  --accent:#1f1b16;--fav:#e0582f;--chip:#efe7da;--chip-on:#1f1b16;--chip-on-ink:#faf7f2;
+  --src:#2f6b3d;--est:#9a6a12;--none:#8a3b3b;
+  --road:#ddd3c4;--park:#dbe6cf;--park-ink:#4f6b3a;--pin:#1f1b16;--pin-dim:#d3c9ba;--hot:#fbeee6;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#16130f;--card:#201c17;--ink:#f1ebe2;--muted:#a79d90;--line:#332d25;
+    --accent:#f1ebe2;--fav:#ff7a5c;--chip:#2a251e;--chip-on:#f1ebe2;--chip-on-ink:#16130f;
+    --src:#7fcf92;--est:#e7b95a;--none:#e58a8a;
+    --road:#3b342b;--park:#25301f;--park-ink:#9fbf86;--pin:#f1ebe2;--pin-dim:#4a4238;--hot:#33241d;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16130f;--card:#201c17;--ink:#f1ebe2;--muted:#a79d90;--line:#332d25;
+  --accent:#f1ebe2;--fav:#ff7a5c;--chip:#2a251e;--chip-on:#f1ebe2;--chip-on-ink:#16130f;
+  --src:#7fcf92;--est:#e7b95a;--none:#e58a8a;
+  --road:#3b342b;--park:#25301f;--park-ink:#9fbf86;--pin:#f1ebe2;--pin-dim:#4a4238;--hot:#33241d;
+  color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1140px;margin:0 auto;padding-inline:16px;padding-block:20px 48px}
+.intro{max-width:720px}
+h1{font-size:28px;margin:4px 0 4px;letter-spacing:-.02em;text-wrap:balance}
+.sub{color:var(--muted);margin:0 0 14px;font-size:14px}
+.legend{font-size:13px;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:14px}
+.legend b{color:var(--ink)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 8px;-webkit-overflow-scrolling:touch}
+.flabel{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:6px 0 2px}
+.fcount{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin:4px 0 0}
+.fcount button{font:inherit;font-size:13px;border:0;background:none;color:var(--accent);cursor:pointer;padding:4px 0;text-decoration:underline}
+.chip{flex:0 0 auto;border:0;background:var(--chip);color:var(--ink);padding:8px 14px;border-radius:999px;font-size:14px;cursor:pointer;font-family:inherit}
+.chip[aria-pressed="true"]{background:var(--chip-on);color:var(--chip-on-ink)}
+button:focus-visible,a:focus-visible{outline:2px solid var(--fav);outline-offset:2px}
+#map circle:focus{outline:none}
+#map circle:focus-visible{stroke:var(--fav);stroke-width:3}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:26px 0 4px}
+.cathint{font-size:13px;color:var(--muted);margin:0 0 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;transition:background .15s,border-color .15s}
+.card.hot{background:var(--hot);border-color:var(--fav)}
+.top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.top > div:first-child{min-width:0}
+.name{font-size:18px;font-weight:650;margin:0}
+.addr{font-size:13px;color:var(--muted);margin:2px 0 0}
+.price{text-align:right;flex:0 0 auto}
+.price .amt{font-size:18px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.price .pp{font-size:11px;color:var(--muted)}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid currentColor;margin-top:4px}
+.tag.src{color:var(--src)}.tag.est{color:var(--est)}.tag.none{color:var(--none)}
+.friend{font-size:13px;margin:8px 0 0;color:var(--ink)}
+.friend i{color:var(--muted)}
+.note{font-size:13px;color:var(--muted);margin:6px 0 0}
+.links{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.links a{font-size:13px;text-decoration:none;color:var(--accent);border:1px solid var(--line);padding:5px 10px;border-radius:8px}
+.links a.main{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.empty{color:var(--muted);text-align:center;padding:30px 0}
+
+/* Two-column body: list + sticky map */
+.main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start;margin-top:8px}
+.mapcol{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px)}
+.mapbox{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:14px}
+.maphead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.maphead b{font-size:15px}
+.mapbtns{display:flex;gap:6px;flex-wrap:wrap}
+.mapbtns button,.fav,.onmap{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--chip);color:var(--ink);padding:5px 10px;border-radius:8px;cursor:pointer}
+.mapbtns button[aria-pressed="true"]{background:var(--chip-on);color:var(--chip-on-ink)}
+#map{width:100%;height:auto;display:block;border-radius:10px;background:var(--bg);touch-action:manipulation}
+#map .road{fill:none;stroke:var(--road);stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+#map .road.minor{stroke-width:3}
+#map .park{fill:var(--park);stroke:none}
+#map .rlabel{font:600 9px/1 ui-monospace,Menlo,monospace;letter-spacing:.06em;fill:var(--muted)}
+#map .hlabel{font:600 12px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--bg);stroke-width:4px}
+#map .plabel{font:italic 11px/1 Georgia,serif;fill:var(--park-ink)}
+#map circle.pin{fill:var(--pin);stroke:var(--card);stroke-width:1.5;cursor:pointer;transition:r .15s}
+#map circle.pin.approx{fill:var(--card);stroke:var(--pin);stroke-width:2}
+#map circle.pin.isfav{fill:var(--fav);stroke:var(--card)}
+#map circle.pin.isfav.approx{fill:var(--card);stroke:var(--fav)}
+#map circle.pin.off{fill:var(--pin-dim);stroke:var(--card);stroke-width:1.5}
+#map circle.pin.hot{stroke:var(--fav);stroke-width:3}
+#map .tip{font:600 12px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:var(--ink);paint-order:stroke;stroke:var(--bg);stroke-width:4px;pointer-events:none}
+.mapnote{font-size:12px;color:var(--muted);margin:6px 0 0;display:flex;flex-wrap:wrap;gap:4px 14px;justify-content:space-between}
+.key{display:inline-flex;align-items:center;gap:5px}
+.key i{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--pin)}
+.key i.o{background:var(--card);border:2px solid var(--pin)}
+.key i.f{background:var(--fav)}
+.sel{margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:10px;font-size:14px}
+.sel .t{font-weight:650}
+.sel .m{color:var(--muted);font-size:13px}
+.sel .links{margin-top:8px}
+.sel button{font:inherit;font-size:13px;border:1px solid var(--accent);background:var(--accent);color:var(--bg);padding:5px 10px;border-radius:8px;cursor:pointer}
+.favlist{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.favlist span{background:var(--fav);color:#fff;font-size:13px;padding:4px 10px;border-radius:999px;cursor:pointer}
+.route{display:inline-block;margin-top:8px;font-size:13px;color:var(--accent)}
+.fav{border-color:var(--accent);color:var(--accent);background:transparent}
+.fav[aria-pressed="true"]{background:var(--fav);border-color:var(--fav);color:#fff}
+.onmap{background:transparent}
+.nomap{font-size:12px;color:var(--muted);align-self:center}
+.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:9;border:0;background:var(--accent);color:var(--bg);font:inherit;font-weight:600;padding:10px 16px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer}
+footer{font-size:12px;color:var(--muted);margin-top:28px;max-width:720px}
+
+@media (max-width:900px){
+  .main{grid-template-columns:minmax(0,1fr)}
+  .mapcol{order:-1;position:static}
+}
+@media (min-width:901px){ .fab{display:none} }
+@media (prefers-reduced-motion:reduce){ *{transition:none!important} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="intro">
+    <h1>Madrid food guide</h1>
+    <p class="sub">A shortlist of Madrid restaurants, split by place, with links, per-person prices and a map.</p>
+
+    <div class="legend">
+      <b>Prices</b> are approximate € per person (food plus a drink or two, unless noted).
+      <span class="tag src">Sourced</span> from reviews or guides ·
+      <span class="tag est">Estimate</span> my rough read of the price tier ·
+      <span class="tag none">Not found</span> I couldn't confirm it.
+      <br><b>Links:</b> only a few official domains could be verified. The "Menu / site" buttons are Google searches so you land on the current official page and carta.
+    </div>
+
+    <div class="mapbox" id="favbox">
+      <div class="maphead"><b>Your favorites</b>
+        <div class="mapbtns"><button type="button" id="bFav" aria-pressed="false">Show favorites only</button></div>
+      </div>
+      <div id="favs"></div>
+    </div>
+
+    <div class="flabel">Price</div><div class="chips" id="chipsP" role="group" aria-label="Filter by price"></div>
+    <div class="flabel">Type of food</div><div class="chips" id="chipsT" role="group" aria-label="Filter by type of food"></div>
+    <div class="flabel">Area of Madrid</div><div class="chips" id="chipsA" role="group" aria-label="Filter by area"></div>
+    <div class="fcount"><span id="count"></span><button type="button" id="bClear">Clear filters</button></div>
+  </div>
+
+  <div class="main">
+    <div id="list"></div>
+    <div class="mapcol" id="mapcol">
+      <div class="mapbox">
+        <div class="maphead"><b>Map</b><span class="nomap" id="mapcount"></span></div>
+        <svg id="map" viewBox="0 0 540 557" role="img" aria-label="Sketch map of central Madrid with restaurant locations"></svg>
+        <div class="mapnote">
+          <span><span class="key"><i></i>Address confirmed</span> &nbsp;<span class="key"><i class="o"></i>Street or area only</span> &nbsp;<span class="key"><i class="f"></i>Favorite</span></span>
+          <span>N ↑ · about 3.5 km across</span>
+        </div>
+        <div class="sel" id="sel" hidden></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Prices change often and tasting-menu places vary a lot with wine. Check the current carta and book early for anywhere marked hard to get into. Map positions are approximate.</footer>
+</div>
+<button type="button" class="fab" id="fab" hidden>↑ Map</button>
+
+<script>
+var G = "https://www.google.com/";
+function q(s){return encodeURIComponent(s)}
+function site(n){return G+"search?q="+q(n+" Madrid carta oficial")}
+function maps(n){return G+"maps/search/?api=1&query="+q(n+" Madrid")}
+
+var DATA = [
+{cat:"Impossible to book, but worth trying", hint:"Los 33 y Caja de Cerillas", items:[
+ {n:"Los 33", a:"Plaza de las Salesas 9 · Salesas", f:"Impossible but worth trying", lo:45, hi:70, b:"src",
+  note:"About €35–50 for food alone, closer to €70 with wine. The bar side takes no reservations; the dining room books online.",
+  l:[["Michelin page","https://guide.michelin.com/hu/en/comunidad-de-madrid/madrid/restaurant/los-33"],["Press: price & waitlist","https://reportergourmet.com/en/news/9390-los-33-500-customers-a-day-and-a-two-month-waiting-list-the-70-gourmet-restaurant-in-madrid"]]},
+ {n:"Caja de Cerillas", a:"Donoso Cortés 8 · Chamberí", f:"Impossible but worth trying", lo:50, hi:65, b:"src",
+  note:"Around €50 before drinks per Macarfi. Tiny: about eight tables, so reserve the moment slots open.",
+  l:[["Time Out","https://www.timeout.es/madrid/es/restaurantes/caja-de-cerillas"],["Macarfi","https://macarfi.com/en/mad/restaurant-card/caja-de-cerillas"],["Michelin page","https://guide.michelin.com/ar/es/comunidad-de-madrid/madrid/restaurante/caja-de-cerillas"]]}
+]},
+{cat:"Madrid-style food", hint:"La Maruca en Velázquez (reservar ya), Gran Café Santander, Castizo, Café Comercial", items:[
+ {n:"La Maruca (Velázquez)", a:"Velázquez 54 · Salamanca", f:"Reserve now", lo:30, hi:40, b:"src",
+  note:"Cantabrian cooking. Neo2/OAD puts the ticket at €30–40. Phone +34 917 81 49 69.",
+  l:[["Michelin page","https://guide.michelin.com/gb/en/comunidad-de-madrid/madrid/restaurant/la-maruca?millesime=um3g85"],["Time Out","https://www.timeout.es/madrid/es/restaurantes/la-maruca"]]},
+ {n:"Gran Café Santander", a:"Plaza de Santa Bárbara 4 · Chueca/Justicia", f:"", lo:20, hi:30, b:"src",
+  note:"Café-restaurant from the Cañadío group, famous for its tortilla pincho. Gastroranking lists ~€20; a sit-down meal runs higher. Phone 914 457 295.",
+  l:[["Guía del Ocio","https://guiadelocio.es/madrid/plan/gran-cafe-santander/"],["Venue info","https://ma.to/venue/grancafe.santander"]]},
+ {n:"Castizo", a:"Madrid", f:"", lo:null, hi:null, b:"none",
+  note:"The name alone matched several places, so I couldn't pin down which one or its price. Check the Maps result for the right one.", l:[]},
+ {n:"Café Comercial", a:"Glorieta de Bilbao · Malasaña", f:"", lo:15, hi:25, b:"est",
+  note:"Historic café; coffee, snacks and light meals. My estimate, not sourced.", l:[]}
+]},
+{cat:"Good meat", hint:"Lana (bastante caro), Pelotari, Raza, Charrúa, Rocacho", items:[
+ {n:"Lana", a:"Ponzano 59 · Chamberí", f:"Quite pricey", lo:70, hi:100, b:"est",
+  note:"Argentine fire-cooking, Michelin Plate. Prices are my estimate for a steak dinner with wine.",
+  l:[["Michelin meat guide","https://guide.michelin.com/es/es/best-of/los-mejores-restaurantes-de-carne-en-madrid"],["Profile","https://www.enprimeurclub.com/restaurants/lana-madrid-restaurant"]]},
+ {n:"Pelotari", a:"Madrid", f:"", lo:50, hi:70, b:"est",
+  note:"Classic cuts over the grill. Estimate based on the tier of similar brasa places.", l:[["Roundup mention","https://okdiario.com/coolthelifestyle/lifestyle/carne-vino-tinto-madrid-restaurantes-895859/amp"]]},
+ {n:"Raza", a:"Madrid", f:"", lo:50, hi:70, b:"est",
+  note:"Uruguayan-style grill. Estimate only.", l:[]},
+ {n:"Charrúa", a:"Conde de Xiquena 4 · Recoletos", f:"", lo:50, hi:70, b:"src",
+  note:"Diner reports range from about €40 up to €60–70, and near €100 with wine and drinks. OpenTable's \"up to €30\" tag looks outdated.",
+  l:[["OpenTable","https://www.opentable.com/r/charrua-madrid?lang=es"],["Diner notes","https://mapstr.com/place/3oNyd3x5Iqg"]]},
+ {n:"Rocacho", a:"Plaza del Marqués de Salamanca 9", f:"", lo:50, hi:75, b:"est",
+  note:"High-end brasa and rice dishes. Estimate.", l:[["Michelin meat guide","https://guide.michelin.com/es/es/best-of/los-mejores-restaurantes-de-carne-en-madrid"]]}
+]},
+{cat:"Aperitivo", hint:"Bar La Mina, mi favorito de Madrid, pedir el carabinero", items:[
+ {n:"Taberna La Mina", a:"General Álvarez de Castro 8 · Chamberí", f:"Order the carabinero", lo:20, hi:45, b:"src",
+  note:"The tourism board lists \"up to €15\" (2023), but that's for bar snacks. Shellfish like carabinero push it up; one review reports a €170 bill for a group. I assumed this is the La Mina your friend means.",
+  l:[["ESMadrid listing","https://www.esmadrid.com/restaurantes/taberna-mina"],["Spotted by Locals","https://www.spottedbylocals.com/madrid/la-mina"]]}
+]},
+{cat:"Full food-and-drink plan", hint:"Roostiq + Jack's Library", items:[
+ {n:"Roostiq", a:"Augusto Figueroa 47 · Chueca (bar at Barquillo 40)", f:"Full plan", lo:50, hi:60, b:"src",
+  note:"Torreznos, wood-fired pizza, champagne. Press says the \"~€30\" often quoted online is wrong; real tickets are about €50.",
+  l:[["Official site","https://madrid.roostiq.com"],["Time Out","https://www.timeout.es/madrid/es/restaurantes/roostiq"],["Price breakdown","https://www.directoalpaladar.com/viajes/torreznos-pizzas-champan-formula-roostiq-para-hacer-llenos-diarios-madrid-teniendo-margarita-a-20-euros"]]},
+ {n:"Jack's Library", a:"Madrid", f:"Drinks", lo:null, hi:null, b:"none",
+  note:"I couldn't find reliable information on this one. Use the Maps link to confirm the venue and prices.", l:[]}
+]},
+{cat:"Top sushi", hint:"Kappo, Ikigai, Ugo Chan (muy caro), Sushita", items:[
+ {n:"Kappo", a:"Bretón de los Herreros 54 · Chamberí", f:"", lo:75, hi:100, b:"src",
+  note:"Omakase-style nigiri. Diners report €75–90, and about €100 with drinks and caviar.",
+  l:[["Time Out list","https://www.timeout.es/madrid/es/restaurantes/los-mejores-restaurantes-japoneses-de-madrid"],["Diner notes","https://mapstr.com/place/21Q7vIGthDg"]]},
+ {n:"Ikigai", a:"Velázquez branch (also Flor Baja 5)", f:"", lo:60, hi:90, b:"est",
+  note:"Japanese-Spanish fish ageing. Estimate from its $$$ tier. The map pin shows the Flor Baja location.", l:[["Madrid Japanese guide","https://mesprestiges.com/de/madrid/cuisine/japanese"]]},
+ {n:"Ugo Chan", a:"Chamartín", f:"Very expensive", lo:120, hi:200, b:"src",
+  note:"Michelin-starred. Listed at €100–120, but tasting-menu diners report €180–200 per head with wine.",
+  l:[["Diner notes","https://mapstr.com/place/fHlWVfU00U"],["Reviews","https://gastroranking.es/r/ugo-chan_291970/"]]},
+ {n:"Sushita", a:"Madrid", f:"", lo:null, hi:null, b:"none",
+  note:"Couldn't find a reliable price. Check the Maps result for the right location.", l:[]}
+]},
+{cat:"Vibe", hint:"Sala de Despiece, Casa Salesas", items:[
+ {n:"Sala de Despiece", a:"Ponzano 11 · Chamberí", f:"Vibe", lo:50, hi:70, b:"src",
+  note:"No reservations. Reviews mention €50+ per person, and one list says €60. Go early on weekends.",
+  l:[["Time Out","https://www.timeout.es/madrid/es/restaurantes/sala-de-despiece"],["World's 50 Best","https://theworlds50best.com/discovery/Establishments/Spain/Madrid/Sala-de-Despiece.html"]]},
+ {n:"Casa Salesas", a:"Las Salesas", f:"Vibe", lo:null, hi:null, b:"none",
+  note:"I couldn't verify the price. Check the Maps result.", l:[]}
+]},
+{cat:"Calle Jorge Juan", hint:"\"Iría 100% a cenar a calle Jorge Juan\", Quintín is less overpriced; El Paraguas, La Máquina and Amazónico are mythical", items:[
+ {n:"Ultramarinos Quintín", a:"Jorge Juan 17", f:"Friend's pick on this street", lo:40, hi:55, b:"src",
+  note:"Trendencias quotes €40–50 per person. Open daily from morning to 2 am.",
+  l:[["Official site","https://ultramarinosquintin.es/"],["Time Out","https://www.timeout.es/madrid/es/restaurantes/ultramarinos-quintin"]]},
+ {n:"El Paraguas", a:"Jorge Juan", f:"Mythical", lo:60, hi:80, b:"est",
+  note:"Same group as Quintín and Amazónico. Estimate for a dinner with wine.", l:[]},
+ {n:"La Máquina", a:"Jorge Juan area", f:"Mythical", lo:50, hi:75, b:"est",
+  note:"Estimate based on the street's price level.", l:[]},
+ {n:"Amazónico", a:"Jorge Juan 20", f:"Mythical", lo:60, hi:90, b:"est",
+  note:"Time Out rates it €€€. World's 50 Best lists an average around $49 and a tasting menu from $78, which looks dated. Expect more with cocktails. Phone +34 915 154 332.",
+  l:[["Time Out","https://www.timeout.es/madrid/es/restaurantes/amazonico"],["World's 50 Best","https://www.theworlds50best.com/discovery/Establishments/Spain/Madrid/Amazónico.html"]]}
+]},
+{cat:"Italian", hint:"Noi, Allegra, Sottosopra", items:[
+ {n:"Noi", a:"Recoletos 6", f:"", lo:60, hi:90, b:"est",
+  note:"Michelin lists €€€ (contemporary Italian, from Puglia). Closed Sunday and Monday. À la carte or set menus.",
+  l:[["Michelin page","https://guide.michelin.com/hu/en/comunidad-de-madrid/madrid/restaurant/noi-1186274"],["Reviews","https://gastroranking.es/r/restaurante-noi_188359/"]]},
+ {n:"Allegra", a:"Salamanca", f:"", lo:60, hi:90, b:"est",
+  note:"New Italian with a piano-bar feel, open late with cocktails and DJs. Estimate.", l:[["Guía del Ocio list","https://guiadelocio.es/madrid/?p=16452"]]},
+ {n:"Sottosopra", a:"Calle Puigcerdá · Salamanca", f:"", lo:35, hi:45, b:"src",
+  note:"Roman trattoria. Trendencias lists about €40.", l:[["Italian roundup","https://www.trendencias.com/gourmet/mejores-15-restaurantes-italianos-madrid"]]}
+]},
+{cat:"Mexican (worth it in Madrid)", hint:"Puntarena, Bakán, Fisher's, Ticuí", items:[
+ {n:"Puntarena", a:"Alberto Aguilera 20 · Casa de México", f:"", lo:60, hi:80, b:"est",
+  note:"Pacific-coast Mexican seafood, Michelin €€€. Estimate.", l:[["Michelin Mexican guide","https://guide.michelin.com/es/es/best-of/los-mejores-restaurantes-mexicanos-de-madrid"],["Profile","https://www.enprimeurclub.com/restaurants/puntarena-madrid-restaurant"]]},
+ {n:"Bakán", a:"Near Puerta de Alcalá", f:"", lo:60, hi:85, b:"est",
+  note:"Traditional regional Mexican. Estimate.", l:[["Review","https://okdiario.com/coolthelifestyle/lifestyle/restaurantes-mexicanos-madrid-207554/amp"]]},
+ {n:"Fisher's", a:"Velázquez 41", f:"", lo:50, hi:70, b:"est",
+  note:"Mexican seafood chain. Estimate.", l:[["Review","https://okdiario.com/coolthelifestyle/lifestyle/restaurantes-mexicanos-madrid-207554/amp"]]},
+ {n:"Ticuí", a:"Cedaceros 6", f:"", lo:70, hi:80, b:"src",
+  note:"Sister of Puntarena, Michelin Plate. Neo2 gives €70 average.",
+  l:[["Michelin page","https://guide.michelin.com/ca/fr/comunidad-de-madrid/madrid/restaurant/ticui"],["Review & price","https://www.neo2.com/?p=469731"]]}
+]}
+];
+
+/* Approximate coordinates [lat, lng, approx?]. approx = only the street or area is known.
+   Places with no confirmed address are left off the map. */
+var GEO = {
+ "Los 33":[40.4237,-3.6952],"Caja de Cerillas":[40.4334,-3.7060],"La Maruca (Velázquez)":[40.4283,-3.6838],
+ "Gran Café Santander":[40.4268,-3.6965],"Café Comercial":[40.4290,-3.7024],"Lana":[40.4436,-3.7016],
+ "Charrúa":[40.4226,-3.6947],"Rocacho":[40.4302,-3.6777],"Taberna La Mina":[40.4335,-3.7020],
+ "Roostiq":[40.4229,-3.6958],"Kappo":[40.4394,-3.6930],"Ikigai":[40.4226,-3.7104],
+ "Sala de Despiece":[40.4388,-3.7008],"Casa Salesas":[40.4240,-3.6940,1],
+ "Ultramarinos Quintín":[40.4232,-3.6862],"El Paraguas":[40.4229,-3.6870,1],"La Máquina":[40.4236,-3.6828,1],
+ "Amazónico":[40.4234,-3.6851],"Noi":[40.4226,-3.6896],"Sottosopra":[40.4240,-3.6858],
+ "Puntarena":[40.4297,-3.7097],"Bakán":[40.4207,-3.6872,1],"Fisher's":[40.4270,-3.6839],"Ticuí":[40.4170,-3.6987]
+};
+
+var FILTERS = [
+  {k:"all",t:"All"},{k:"u30",t:"Under €30",f:function(m){return m<30}},
+  {k:"m",t:"€30–50",f:function(m){return m>=30&&m<50}},
+  {k:"h",t:"€50–80",f:function(m){return m>=50&&m<80}},
+  {k:"x",t:"€80+",f:function(m){return m>=80}},
+  {k:"nf",t:"Price not found"}
+];
+var cur = "all";
+
+function badge(b){
+  if(b==="src") return '<span class="tag src">Sourced</span>';
+  if(b==="est") return '<span class="tag est">Estimate</span>';
+  return '<span class="tag none">Not found</span>';
+}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function priceText(it){ return it.lo==null ? "Price not found" : "€"+it.lo+"–"+it.hi+(it.hi>=200?"+":"")+" pp"; }
+
+function render(){
+  var out="", total=0;
+  DATA.forEach(function(c){
+    var cards="";
+    c.items.forEach(function(it){
+      var mid = (it.lo==null)?null:(it.lo+it.hi)/2;
+      if(!passes(it)) return;
+      total++;
+      var price = mid===null ? '<div class="amt">?</div>' :
+        '<div class="amt">€'+it.lo+'–'+it.hi+(it.hi>=200?'+':'')+'</div><div class="pp">per person</div>';
+      var links = favBtn(it)+'<a class="main" href="'+site(it.n)+'" target="_blank" rel="noopener">Menu / site</a>';
+      it.l.forEach(function(x){ links += '<a href="'+esc(x[1])+'" target="_blank" rel="noopener">'+esc(x[0])+'</a>'; });
+      links += '<a href="'+maps(it.n)+'" target="_blank" rel="noopener">Google Maps</a>';
+      links += GEO[it.n] ? '<button type="button" class="onmap" data-m="'+it.id+'">Show on map</button>' : '<span class="nomap">Not on map</span>';
+      cards += '<div class="card" data-id="'+it.id+'"><div class="top"><div><h3 class="name">'+esc(it.n)+'</h3><p class="addr">'+esc(it.a)+'</p></div>'+
+        '<div class="price">'+price+badge(it.b)+'</div></div>'+
+        (it.f?'<p class="friend"><i>Friend says:</i> '+esc(it.f)+'</p>':'')+
+        '<p class="note">'+esc(it.note)+'</p><div class="links">'+links+'</div></div>';
+    });
+    if(cards) out += '<h2>'+esc(c.cat)+'</h2><p class="cathint">'+esc(c.hint)+'</p>'+cards;
+  });
+  document.getElementById("list").innerHTML = out || '<p class="empty">Nothing matches these filters.</p>';
+  document.getElementById("count").textContent = "Showing "+total+" of "+ALL.length+" places";
+  drawPins();
+  refresh();
+}
+
+var curT = "all", curA = "all";
+var TYPE_ORDER = ["Steak & grill","Spanish","Tapas & bars","Cafés","Japanese","Italian","Mexican","Latin & international"];
+var AREA_ORDER = ["Chueca & Salesas","Chamberí","Salamanca","Centro","Chamartín & North","Not confirmed"];
+var TYPE = {
+ "Los 33":"Steak & grill","Caja de Cerillas":"Spanish","La Maruca (Velázquez)":"Spanish","Gran Café Santander":"Spanish",
+ "Castizo":"Spanish","Café Comercial":"Cafés","Lana":"Steak & grill","Pelotari":"Steak & grill","Raza":"Steak & grill",
+ "Charrúa":"Steak & grill","Rocacho":"Steak & grill","Taberna La Mina":"Tapas & bars","Roostiq":"Steak & grill",
+ "Jack's Library":"Tapas & bars","Kappo":"Japanese","Ikigai":"Japanese","Ugo Chan":"Japanese","Sushita":"Japanese",
+ "Sala de Despiece":"Tapas & bars","Casa Salesas":"Spanish","Ultramarinos Quintín":"Spanish","El Paraguas":"Spanish",
+ "La Máquina":"Spanish","Amazónico":"Latin & international","Noi":"Italian","Allegra":"Italian","Sottosopra":"Italian",
+ "Puntarena":"Mexican","Bakán":"Mexican","Fisher's":"Mexican","Ticuí":"Mexican"
+};
+var AREA = {
+ "Los 33":"Chueca & Salesas","Gran Café Santander":"Chueca & Salesas","Roostiq":"Chueca & Salesas","Casa Salesas":"Chueca & Salesas","Charrúa":"Chueca & Salesas",
+ "Caja de Cerillas":"Chamberí","Café Comercial":"Chamberí","Lana":"Chamberí","Taberna La Mina":"Chamberí","Kappo":"Chamberí","Sala de Despiece":"Chamberí","Puntarena":"Chamberí",
+ "La Maruca (Velázquez)":"Salamanca","Rocacho":"Salamanca","Ultramarinos Quintín":"Salamanca","El Paraguas":"Salamanca","La Máquina":"Salamanca","Amazónico":"Salamanca","Fisher's":"Salamanca","Sottosopra":"Salamanca","Allegra":"Salamanca","Bakán":"Salamanca","Noi":"Salamanca",
+ "Ticuí":"Centro","Ikigai":"Centro","Ugo Chan":"Chamartín & North",
+ "Castizo":"Not confirmed","Pelotari":"Not confirmed","Raza":"Not confirmed","Jack's Library":"Not confirmed","Sushita":"Not confirmed"
+};
+function passes(it){
+  var mid = (it.lo==null)?null:(it.lo+it.hi)/2;
+  if(cur==="nf"){ if(mid!==null) return false; }
+  else if(cur!=="all"){
+    var f = FILTERS.filter(function(x){return x.k===cur})[0];
+    if(mid===null||!f.f(mid)) return false;
+  }
+  if(curT!=="all" && TYPE[it.n]!==curT) return false;
+  if(curA!=="all" && AREA[it.n]!==curA) return false;
+  if(favOnly && !FAV[it.n]) return false;
+  return true;
+}
+function chipRow(id, opts, getCur, setCur){
+  var el = document.getElementById(id); el.innerHTML="";
+  opts.forEach(function(o){
+    var b = document.createElement("button");
+    b.className="chip"; b.type="button"; b.textContent=o.t;
+    b.setAttribute("aria-pressed", o.k===getCur()?"true":"false");
+    b.onclick=function(){ setCur(o.k); buildChips(); render(); };
+    el.appendChild(b);
+  });
+}
+function buildChips(){
+  chipRow("chipsP", FILTERS, function(){return cur}, function(v){cur=v});
+  chipRow("chipsT", [{k:"all",t:"All"}].concat(TYPE_ORDER.map(function(t){return {k:t,t:t}})), function(){return curT}, function(v){curT=v});
+  chipRow("chipsA", [{k:"all",t:"All"}].concat(AREA_ORDER.map(function(t){return {k:t,t:t}})), function(){return curA}, function(v){curA=v});
+}
+function clearFilters(){
+  cur="all"; curT="all"; curA="all"; favOnly=false;
+  document.getElementById("bFav").setAttribute("aria-pressed","false");
+  buildChips(); render();
+}
+
+/* ---------- Favorites ---------- */
+var FAV = {};
+try{ var _s = localStorage.getItem("madridFavs"); if(_s) FAV = JSON.parse(_s) || {}; }catch(e){}
+function saveFav(){ try{ localStorage.setItem("madridFavs", JSON.stringify(FAV)); }catch(e){} }
+var ITEMS = {}, BYID = {}, ALL = [];
+DATA.forEach(function(c){ c.items.forEach(function(it){ it.id = ALL.length + 1; ALL.push(it); ITEMS[it.n] = it; BYID[it.id] = it; }); });
+var favOnly = false;
+
+function favBtn(it){
+  var on = !!FAV[it.n];
+  return '<button type="button" class="fav" data-k="'+esc(it.n)+'" aria-pressed="'+on+'">'+(on?'★ Favorite':'☆ Favorite')+'</button>';
+}
+function favNames(){ return Object.keys(FAV).filter(function(k){ return FAV[k] && ITEMS[k]; }); }
+function toggleFav(k){
+  if(FAV[k]) delete FAV[k]; else FAV[k] = true;
+  saveFav();
+  if(favOnly) render(); else { refresh(); drawPins(); }
+}
+function drawFavs(){
+  var f = favNames(), el = document.getElementById("favs");
+  if(!f.length){ el.innerHTML = '<p class="mapnote">No favorites yet. Tap ☆ Favorite on any card. Favorites show in orange on the map.</p>'; return; }
+  var h = '<div class="favlist">'+f.map(function(n){ return '<span data-r="'+esc(n)+'" title="Remove">★ '+esc(n)+' ✕</span>'; }).join("")+'</div>';
+  if(f.length >= 2){
+    var url = G+"maps/dir/"+f.map(function(n){ return q(n+", Madrid"); }).join("/");
+    h += '<a class="route" href="'+url+'" target="_blank" rel="noopener">Open all favorites as a route in Google Maps →</a>';
+  }
+  el.innerHTML = h;
+}
+function syncButtons(){
+  var btns = document.querySelectorAll(".fav");
+  for(var i=0;i<btns.length;i++){
+    var on = !!FAV[btns[i].getAttribute("data-k")];
+    btns[i].setAttribute("aria-pressed", on);
+    btns[i].textContent = on ? "★ Favorite" : "☆ Favorite";
+  }
+}
+function refresh(){ drawFavs(); syncButtons(); }
+
+/* ---------- Map (same approach as Cambridge Eats: hand-drawn SVG, simple equirectangular projection) ---------- */
+var B = { w:-3.716, e:-3.674, s:40.4135, n:40.4465 }, W = 540, H = 557;
+function px(lng){ return (lng - B.w) / (B.e - B.w) * W; }
+function py(lat){ return (B.n - lat) / (B.n - B.s) * H; }
+function pts(a){ return a.map(function(p){ return px(p[1]).toFixed(1)+","+py(p[0]).toFixed(1); }).join(" "); }
+var selId = null;
+
+function drawBase(){
+  var castellana = [[40.4470,-3.6903],[40.4380,-3.6912],[40.4300,-3.6908],[40.4253,-3.6905],[40.4193,-3.6930],[40.4153,-3.6942],[40.4130,-3.6935]];
+  var granVia    = [[40.4190,-3.6965],[40.4199,-3.7013],[40.4201,-3.7058],[40.4222,-3.7090],[40.4236,-3.7122]];
+  var alcala     = [[40.4169,-3.7035],[40.4185,-3.6975],[40.4193,-3.6930],[40.4199,-3.6888],[40.4222,-3.6820],[40.4245,-3.6755]];
+  var bulevares  = [[40.4253,-3.6905],[40.4277,-3.6955],[40.4289,-3.7027],[40.4298,-3.7090],[40.4303,-3.7160]];
+  var velazquez  = [[40.4205,-3.6838],[40.4300,-3.6838],[40.4400,-3.6842],[40.4470,-3.6845]];
+  var jorgeJuan  = [[40.4224,-3.6895],[40.4230,-3.6860],[40.4238,-3.6805],[40.4245,-3.6760]];
+  var ponzano    = [[40.4380,-3.7005],[40.4440,-3.7018]];
+  var engracia   = [[40.4277,-3.6955],[40.4330,-3.6985],[40.4400,-3.6988],[40.4470,-3.6992]];
+  var retiro     = [[40.4202,-3.6878],[40.4198,-3.6815],[40.4183,-3.6770],[40.4135,-3.6762],[40.4135,-3.6900],[40.4170,-3.6890]];
+  var hoods = [["Chamberí",40.4372,-3.7085],["Salamanca",40.4320,-3.6790],["Chueca",40.4215,-3.6990],["Malasaña",40.4258,-3.7060],["Sol · Centro",40.4148,-3.7060],["Almagro",40.4320,-3.6935]];
+  var h = '<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="var(--bg)"/>';
+  h += '<polygon class="park" points="'+pts(retiro)+'"/>';
+  h += '<text class="plabel" x="'+px(-3.6830)+'" y="'+py(40.4165)+'" text-anchor="middle">Retiro</text>';
+  [ponzano, engracia, jorgeJuan, velazquez].forEach(function(r){ h += '<polyline class="road minor" points="'+pts(r)+'"/>'; });
+  [castellana, granVia, alcala, bulevares].forEach(function(r){ h += '<polyline class="road" points="'+pts(r)+'"/>'; });
+  h += '<text class="rlabel" x="'+(px(-3.6908)+7)+'" y="'+py(40.4420)+'">CASTELLANA</text>';
+  h += '<text class="rlabel" x="'+(px(-3.6930)+7)+'" y="'+py(40.4210)+'">RECOLETOS</text>';
+  h += '<text class="rlabel" x="'+px(-3.7075)+'" y="'+(py(40.4211)-6)+'" text-anchor="middle" transform="rotate(-24 '+px(-3.7075)+' '+(py(40.4211)-6)+')">GRAN VÍA</text>';
+  h += '<text class="rlabel" x="'+px(-3.6795)+'" y="'+(py(40.4232)+12)+'" text-anchor="middle" transform="rotate(-20 '+px(-3.6795)+' '+(py(40.4232)+12)+')">ALCALÁ</text>';
+  h += '<text class="rlabel" x="'+px(-3.7125)+'" y="'+(py(40.4300)-6)+'" text-anchor="middle">A. AGUILERA</text>';
+  h += '<text class="rlabel" x="'+(px(-3.6840)+6)+'" y="'+py(40.4440)+'">VELÁZQUEZ</text>';
+  h += '<text class="rlabel" x="'+px(-3.6790)+'" y="'+(py(40.4242)-8)+'" text-anchor="middle" transform="rotate(-10 '+px(-3.6790)+' '+(py(40.4242)-8)+')">JORGE JUAN</text>';
+  hoods.forEach(function(x){ h += '<text class="hlabel" x="'+px(x[2])+'" y="'+py(x[1])+'" text-anchor="middle">'+x[0]+'</text>'; });
+  h += '<g id="pins"></g><g id="tipg"></g>';
+  document.getElementById("map").innerHTML = h;
+}
+
+function drawPins(){
+  var placed = ALL.filter(function(it){ return GEO[it.n]; });
+  var shown = placed.filter(passes);
+  var on = {}; shown.forEach(function(it){ on[it.id] = 1; });
+  // dimmed pins first so matching pins sit on top
+  var order = placed.slice().sort(function(a,b){ return (on[a.id]?1:0) - (on[b.id]?1:0); });
+  document.getElementById("pins").innerHTML = order.map(function(it){
+    var g = GEO[it.n], cls = "pin" + (g[2] ? " approx" : "") + (FAV[it.n] ? " isfav" : "") + (on[it.id] ? "" : " off") + (it.id===selId ? " hot" : "");
+    return '<circle class="'+cls+'" data-id="'+it.id+'" cx="'+px(g[1]).toFixed(1)+'" cy="'+py(g[0]).toFixed(1)+'" r="'+(it.id===selId?8:6)+'" tabindex="'+(on[it.id]?0:-1)+'" role="button" aria-label="'+esc(it.n)+'"><title>'+esc(it.n)+(g[2]?" (approximate)":"")+'</title></circle>';
+  }).join("");
+  var visible = ALL.filter(passes).length;
+  document.getElementById("mapcount").textContent = shown.length+" of "+visible+" places on the map";
+}
+
+function tip(id){
+  var tg = document.getElementById("tipg");
+  if(!id){ tg.innerHTML = ""; return; }
+  var it = BYID[id], g = GEO[it.n]; if(!g) return;
+  var x = px(g[1]), y = py(g[0]);
+  var anchor = x > W - 120 ? "end" : x < 120 ? "start" : "middle";
+  tg.innerHTML = '<text class="tip" x="'+x+'" y="'+(y-13)+'" text-anchor="'+anchor+'">'+esc(it.n)+'</text>';
+}
+function hot(id, on){
+  var card = document.querySelector('.card[data-id="'+id+'"]');
+  var pin = document.querySelector('#map circle.pin[data-id="'+id+'"]');
+  if(card) card.classList.toggle("hot", on || id===selId);
+  if(pin){ var h = on || id===selId; pin.classList.toggle("hot", h); pin.setAttribute("r", h ? 8 : 6); }
+  tip(on ? id : selId);
+}
+function select(id){
+  var prev = selId; selId = id;
+  if(prev && prev!==id) hot(prev, false);
+  var it = BYID[id], box = document.getElementById("sel");
+  box.hidden = false;
+  box.innerHTML = '<div class="t">'+esc(it.n)+'</div><div class="m">'+esc(it.a)+' · '+priceText(it)+(GEO[it.n][2]?' · pin is approximate':'')+'</div>'+
+    '<div class="links"><button type="button" data-go="'+id+'">Go to card</button><a href="'+maps(it.n)+'" target="_blank" rel="noopener">Google Maps</a></div>';
+  hot(id, true);
+}
+function smooth(){ return matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"; }
+function goCard(id){
+  var card = document.querySelector('.card[data-id="'+id+'"]');
+  if(card) card.scrollIntoView({behavior:smooth(), block:"center"});
+}
+function pinClick(el){
+  var id = +el.getAttribute("data-id");
+  if(el.classList.contains("off")) clearFilters();
+  select(id);
+  if(matchMedia("(min-width: 901px)").matches) goCard(id);
+}
+function wireMap(){
+  var map = document.getElementById("map"), list = document.getElementById("list");
+  map.addEventListener("mouseover", function(e){ if(e.target.classList.contains("pin")) hot(+e.target.getAttribute("data-id"), true); });
+  map.addEventListener("mouseout",  function(e){ if(e.target.classList.contains("pin")) hot(+e.target.getAttribute("data-id"), false); });
+  map.addEventListener("click", function(e){ if(e.target.classList.contains("pin")) pinClick(e.target); });
+  map.addEventListener("keydown", function(e){ if((e.key==="Enter"||e.key===" ") && e.target.classList.contains("pin")){ e.preventDefault(); pinClick(e.target); } });
+  list.addEventListener("mouseover", function(e){ var c = e.target.closest(".card"); if(c) hot(+c.getAttribute("data-id"), true); });
+  list.addEventListener("mouseout",  function(e){ var c = e.target.closest(".card"); if(c && !c.contains(e.relatedTarget)) hot(+c.getAttribute("data-id"), false); });
+}
+
+document.addEventListener("click", function(e){
+  var t = e.target; if(!t.closest) return;
+  var fb = t.closest(".fav"); if(fb){ toggleFav(fb.getAttribute("data-k")); return; }
+  var rm = t.closest("[data-r]"); if(rm){ toggleFav(rm.getAttribute("data-r")); return; }
+  var om = t.closest("[data-m]");
+  if(om){ var id = +om.getAttribute("data-m"); select(id); document.getElementById("mapcol").scrollIntoView({behavior:smooth(), block:"start"}); return; }
+  var go = t.closest("[data-go]"); if(go){ goCard(+go.getAttribute("data-go")); return; }
+});
+document.getElementById("bClear").onclick = clearFilters;
+document.getElementById("bFav").onclick = function(){
+  favOnly = !favOnly; this.setAttribute("aria-pressed", favOnly); render();
+};
+
+/* Floating "Map" button on phones when the map scrolls out of view */
+var fab = document.getElementById("fab");
+fab.onclick = function(){ document.getElementById("mapcol").scrollIntoView({behavior:smooth(), block:"start"}); };
+if("IntersectionObserver" in window){
+  new IntersectionObserver(function(en){ fab.hidden = en[0].isIntersecting; }).observe(document.getElementById("map"));
+}
+
+drawBase(); buildChips(); render(); wireMap();
+</script>
+</body>
+</html>
