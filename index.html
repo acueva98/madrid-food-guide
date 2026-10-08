@@ -203,7 +203,10 @@ var DATA = [
  {n:"Castizo", a:"Madrid", f:"", lo:null, hi:null, b:"none",
   note:"The name alone matched several places, so I couldn't pin down which one or its price. Check the Maps result for the right one.", l:[]},
  {n:"Café Comercial", a:"Glorieta de Bilbao · Malasaña", f:"", lo:15, hi:25, b:"est",
-  note:"Historic café; coffee, snacks and light meals. My estimate, not sourced.", l:[]}
+  note:"Historic café; coffee, snacks and light meals. My estimate, not sourced.", l:[]},
+ {n:"Casa Lucio", a:"Cava Baja 35 · La Latina", f:"", lo:50, hi:70, b:"est",
+  note:"Classic Madrid tavern famous for huevos rotos (fried eggs over crisp potatoes) and solomillo from the coal oven. Time Out rates it 3 of 4 on price; range is my estimate. Ask for a table upstairs. Usually closed in August. Phone 91 365 32 52.",
+  l:[["Time Out","https://www.timeout.com/madrid/restaurants-and-cafes/casa-lucio"],["ESMadrid: La Latina","https://www.esmadrid.com/en/sunday-latina-madrid"]]}
 ]},
 {cat:"Good meat", hint:"Lana (bastante caro), Pelotari, Raza, Charrúa, Rocacho", items:[
  {n:"Lana", a:"Ponzano 59 · Chamberí", f:"Quite pricey", lo:70, hi:100, b:"est",
@@ -248,7 +251,10 @@ var DATA = [
   note:"No reservations. Reviews mention €50+ per person, and one list says €60. Go early on weekends.",
   l:[["Time Out","https://www.timeout.es/madrid/es/restaurantes/sala-de-despiece"],["World's 50 Best","https://theworlds50best.com/discovery/Establishments/Spain/Madrid/Sala-de-Despiece.html"]]},
  {n:"Casa Salesas", a:"Las Salesas", f:"Vibe", lo:null, hi:null, b:"none",
-  note:"I couldn't verify the price. Check the Maps result.", l:[]}
+  note:"I couldn't verify the price. Check the Maps result.", l:[]},
+ {n:"Ten con Ten", a:"Ayala 6 · Salamanca", f:"", lo:50, hi:100, b:"src",
+  note:"Stylish see-and-be-seen Spanish spot with a long wine list. Known for the Pitu empanada, tuna tacos, artichoke lasagna and apple tart. El Independiente puts a modest meal at €50–100; it goes well past that with big wines. Open daily 1 pm to midnight.",
+  l:[["Time Out","https://www.timeout.com/madrid/restaurants-and-cafes/ten-con-ten"],["Price breakdown","https://www.elindependiente.com/espana/2025/05/21/precio-restaurante-jeff-bezos-madrid/"]]}
 ]},
 {cat:"Calle Jorge Juan", hint:"\"Iría 100% a cenar a calle Jorge Juan\", Quintín is less overpriced; El Paraguas, La Máquina and Amazónico are mythical", items:[
  {n:"Ultramarinos Quintín", a:"Jorge Juan 17", f:"Friend's pick on this street", lo:40, hi:55, b:"src",
@@ -269,7 +275,10 @@ var DATA = [
  {n:"Allegra", a:"Salamanca", f:"", lo:60, hi:90, b:"est",
   note:"New Italian with a piano-bar feel, open late with cocktails and DJs. Estimate.", l:[["Guía del Ocio list","https://guiadelocio.es/madrid/?p=16452"]]},
  {n:"Sottosopra", a:"Calle Puigcerdá · Salamanca", f:"", lo:35, hi:45, b:"src",
-  note:"Roman trattoria. Trendencias lists about €40.", l:[["Italian roundup","https://www.trendencias.com/gourmet/mejores-15-restaurantes-italianos-madrid"]]}
+  note:"Roman trattoria. Trendencias lists about €40.", l:[["Italian roundup","https://www.trendencias.com/gourmet/mejores-15-restaurantes-italianos-madrid"]]},
+ {n:"Don Giovanni", a:"Paseo de la Reina Cristina 23 · Retiro", f:"", lo:50, hi:60, b:"src",
+  note:"Andrea Tumbarello's Italian, all about truffle: spaghetti Bosconara, burrata millefeuille with beef carpaccio, tiramisu. El Español cites about €50; diners report around €55. Drinks run pricey. Book ahead; there's a terrace.",
+  l:[["El Español review","https://elespanol.com/cocinillas/restaurantes/20180109/don-giovanni-confirmacion-tumbarello-trufa-cocina-italiana/1001103949595_31.html"],["Reviews","https://gastroranking.es/r/don-giovanni-7_54029"]]}
 ]},
 {cat:"Mexican (worth it in Madrid)", hint:"Puntarena, Bakán, Fisher's, Ticuí", items:[
  {n:"Puntarena", a:"Alberto Aguilera 20 · Casa de México", f:"", lo:60, hi:80, b:"est",
@@ -294,7 +303,8 @@ var GEO = {
  "Sala de Despiece":[40.4388,-3.7008],"Casa Salesas":[40.4240,-3.6940,1],
  "Ultramarinos Quintín":[40.4232,-3.6862],"El Paraguas":[40.4229,-3.6870,1],"La Máquina":[40.4236,-3.6828,1],
  "Amazónico":[40.4234,-3.6851],"Noi":[40.4226,-3.6896],"Sottosopra":[40.4240,-3.6858],
- "Puntarena":[40.4297,-3.7097],"Bakán":[40.4207,-3.6872,1],"Fisher's":[40.4270,-3.6839],"Ticuí":[40.4170,-3.6987]
+ "Puntarena":[40.4297,-3.7097],"Bakán":[40.4207,-3.6872,1],"Fisher's":[40.4270,-3.6839],"Ticuí":[40.4170,-3.6987],
+ "Casa Lucio":[40.4119,-3.7086],"Ten con Ten":[40.4253,-3.6869],"Don Giovanni":[40.4072,-3.6795]
 };
 
 /* ---------- Price tiers (by midpoint of the per-person range) ---------- */
@@ -312,7 +322,7 @@ var CONF = {src:"Sourced", est:"Estimate", none:"Not confirmed"};
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 
 var TYPE_ORDER = ["Steak & grill","Spanish","Tapas & bars","Cafés","Japanese","Italian","Mexican","Latin & international"];
-var AREA_ORDER = ["Chueca & Salesas","Chamberí","Salamanca","Centro","Chamartín & North","Not confirmed"];
+var AREA_ORDER = ["Chueca & Salesas","Chamberí","Salamanca","Centro","Retiro & Atocha","Chamartín & North","Not confirmed"];
 var TYPE = {
  "Los 33":"Steak & grill","Caja de Cerillas":"Spanish","La Maruca (Velázquez)":"Spanish","Gran Café Santander":"Spanish",
  "Castizo":"Spanish","Café Comercial":"Cafés","Lana":"Steak & grill","Pelotari":"Steak & grill","Raza":"Steak & grill",
@@ -320,13 +330,14 @@ var TYPE = {
  "Jack's Library":"Tapas & bars","Kappo":"Japanese","Ikigai":"Japanese","Ugo Chan":"Japanese","Sushita":"Japanese",
  "Sala de Despiece":"Tapas & bars","Casa Salesas":"Spanish","Ultramarinos Quintín":"Spanish","El Paraguas":"Spanish",
  "La Máquina":"Spanish","Amazónico":"Latin & international","Noi":"Italian","Allegra":"Italian","Sottosopra":"Italian",
+ "Casa Lucio":"Spanish","Ten con Ten":"Spanish","Don Giovanni":"Italian",
  "Puntarena":"Mexican","Bakán":"Mexican","Fisher's":"Mexican","Ticuí":"Mexican"
 };
 var AREA = {
  "Los 33":"Chueca & Salesas","Gran Café Santander":"Chueca & Salesas","Roostiq":"Chueca & Salesas","Casa Salesas":"Chueca & Salesas","Charrúa":"Chueca & Salesas",
  "Caja de Cerillas":"Chamberí","Café Comercial":"Chamberí","Lana":"Chamberí","Taberna La Mina":"Chamberí","Kappo":"Chamberí","Sala de Despiece":"Chamberí","Puntarena":"Chamberí",
  "La Maruca (Velázquez)":"Salamanca","Rocacho":"Salamanca","Ultramarinos Quintín":"Salamanca","El Paraguas":"Salamanca","La Máquina":"Salamanca","Amazónico":"Salamanca","Fisher's":"Salamanca","Sottosopra":"Salamanca","Allegra":"Salamanca","Bakán":"Salamanca","Noi":"Salamanca",
- "Ticuí":"Centro","Ikigai":"Centro","Ugo Chan":"Chamartín & North",
+ "Ticuí":"Centro","Ikigai":"Centro","Casa Lucio":"Centro","Ten con Ten":"Salamanca","Don Giovanni":"Retiro & Atocha","Ugo Chan":"Chamartín & North",
  "Castizo":"Not confirmed","Pelotari":"Not confirmed","Raza":"Not confirmed","Jack's Library":"Not confirmed","Sushita":"Not confirmed"
 };
 
@@ -487,7 +498,7 @@ function leafletMap(){
 
 /* Sketch map: fallback when map tiles or Leaflet can't load (e.g. inside a Claude artifact). Same idea as Cambridge Eats. */
 function sketchMap(){
-  var B = { w:-3.716, e:-3.674, s:40.4135, n:40.4465 }, W = 540, H = 557, sel = null;
+  var B = { w:-3.716, e:-3.674, s:40.4055, n:40.4465 }, W = 540, H = 692, sel = null;
   function px(lng){ return (lng - B.w) / (B.e - B.w) * W; }
   function py(lat){ return (B.n - lat) / (B.n - B.s) * H; }
   function pts(a){ return a.map(function(p){ return px(p[1]).toFixed(1)+","+py(p[0]).toFixed(1); }).join(" "); }
