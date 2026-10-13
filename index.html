@@ -81,6 +81,9 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--fav);outline-offset
 .slot .warn{color:var(--t4);font-size:12px}
 .todo{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:12px;font-size:13px;color:var(--muted)}
 .todo .chip{color:var(--ink)}
+.sync{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.unlock{display:flex;gap:6px}
+.unlock input{height:34px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;font-size:13px;width:170px}
 .copied{font-size:12px;color:var(--t1)}
 .linkout{width:100%;font:12px ui-monospace,Menlo,monospace;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);margin-top:8px}
 /* Booking on cards */
@@ -471,6 +474,50 @@ var TRIP = [
 var BOOK = {};
 try{ BOOK = JSON.parse(lsGet("madridBookings")||"{}") || {}; }catch(e){ BOOK = {}; }
 function saveBook(){ lsSet("madridBookings", JSON.stringify(BOOK)); }
+
+/* ---------- Cloud sync (Supabase). Data lives in private tables reached only through passcode-checked functions. ---------- */
+var SB_URL = "https://ijujhjvggzbriooblawt.supabase.co";
+var SB_KEY = "sb_publishable_hQgHx5YJyYfkofty0hz1Xw_a4-kdDSn"; // publishable key: safe in the page
+var CLOUD = {pass: lsGet("madridTripPass") || "", status: "off", msg: ""};
+function rpc(fn, args){
+  return fetch(SB_URL+"/rest/v1/rpc/"+fn, {method:"POST", headers:{"apikey":SB_KEY, "Content-Type":"application/json"}, body:JSON.stringify(args)})
+    .then(function(r){ return r.text().then(function(t){ if(!r.ok){ var e = new Error(t); e.status = r.status; throw e; } return t ? JSON.parse(t) : null; }); });
+}
+function setCloud(status, msg){ CLOUD.status = status; CLOUD.msg = msg || ""; var el = document.getElementById("syncState"); if(el) el.outerHTML = syncHtml(); else renderTrip(); }
+function syncHtml(){
+  var c = CLOUD, dot = {ok:"var(--t1)", busy:"var(--t2)", err:"var(--t4)", off:"var(--t0)"}[c.status] || "var(--t0)";
+  var txt = c.status==="ok" ? "Synced to the cloud" : c.status==="busy" ? "Saving…" : c.status==="err" ? (c.msg || "Couldn’t reach the cloud. Changes are kept on this device.") : "Not synced: this device only";
+  return '<span id="syncState" class="sync"><span class="dot" style="--tc:'+dot+'"></span>'+esc(txt)+'</span>';
+}
+function cloudPush(fn, args){
+  if(!CLOUD.pass) return Promise.resolve();
+  setCloud("busy");
+  args.p = CLOUD.pass;
+  return rpc(fn, args).then(function(){ setCloud("ok"); }, function(e){ setCloud("err", e.status===404 ? "Cloud not fully set up yet. Changes are kept on this device." : ""); });
+}
+function cloudSaveBooking(n){ var b = BOOK[n]; return cloudPush("trip_save_booking", {rname:n, rday:b.d, rtime:b.t, rpeople:b.p ? +b.p : null, rnote:b.note || ""}); }
+function cloudDeleteBooking(n){ return cloudPush("trip_delete_booking", {rname:n}); }
+function cloudFav(n, on){ return cloudPush("trip_set_favorite", {rname:n, fav:!!on}); }
+function cloudLoad(){
+  if(!CLOUD.pass){ setCloud("off"); return Promise.resolve(); }
+  setCloud("busy");
+  return rpc("trip_get", {p:CLOUD.pass}).then(function(data){
+    var sb = data.bookings || {}, sf = data.favorites || [];
+    // Upload anything that exists only on this device (e.g. bookings made before sync existed)
+    var ups = [];
+    Object.keys(BOOK).forEach(function(n){ if(!sb[n]){ sb[n] = BOOK[n]; ups.push(["b", n]); } });
+    Object.keys(FAV).forEach(function(n){ if(FAV[n] && sf.indexOf(n)<0){ sf.push(n); ups.push(["f", n]); } });
+    BOOK = sb; saveBook();
+    FAV = {}; sf.forEach(function(n){ FAV[n] = true; }); saveFav();
+    update();
+    var chain = Promise.resolve();
+    ups.forEach(function(u){ chain = chain.then(function(){ return u[0]==="b" ? cloudSaveBooking(u[1]) : cloudFav(u[1], true); }); });
+    return chain.then(function(){ if(CLOUD.status!=="err") setCloud("ok"); });
+  }, function(e){
+    if(e.status===400 || /passcode/i.test(e.message)){ CLOUD.pass = ""; lsSet("madridTripPass", ""); setCloud("err", "That passcode didn’t work. Try again."); renderTrip(); }
+    else setCloud("err");
+  });
+}
 function mealOf(t){ var h = parseInt((t||"21:00").split(":")[0],10); return h < 17 ? "lunch" : "dinner"; }
 function dayLabel(d){ for(var i=0;i<TRIP.length;i++) if(TRIP[i].d===d) return TRIP[i].l; var x = new Date(d+"T12:00:00"); return isNaN(x) ? d : x.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}); }
 function bookText(b){ return dayLabel(b.d)+" · "+b.t+(b.p?" · "+b.p+" ppl":""); }
@@ -516,7 +563,8 @@ function renderTrip(){
   var favTodo = Object.keys(FAV).filter(function(n){ return FAV[n] && ITEMS[n] && !BOOK[n]; });
   var h = '<div class="triphead"><div><h2>Your trip · Thu Oct 29 – Sun Nov 1</h2>'+
     '<div class="sum"><b>'+filled+' of '+total+'</b> meals booked · '+(total-filled)+' still open</div></div>'+
-    '<div class="tripact"><button type="button" class="btn" id="bShare">Copy link with my bookings</button><span id="shareMsg" class="copied" aria-live="polite"></span></div></div>'+
+    '<div class="tripact">'+syncHtml()+(CLOUD.pass ? '<button type="button" class="linkbtn" id="bLock">Lock this device</button>' :
+      '<form id="unlock" class="unlock"><input id="passIn" type="password" autocomplete="current-password" placeholder="Trip passcode" aria-label="Trip passcode"><button type="submit" class="btn">Unlock & sync</button></form>')+'</div></div>'+
     '<div class="days">'+days+'</div>';
   if(other.length) h += '<div class="todo">Other dates: '+other.map(function(n){ return '<button type="button" class="chip" data-go="'+ITEMS[n].id+'">'+esc(n)+' · '+esc(bookText(BOOK[n]))+'</button>'; }).join("")+'</div>';
   h += '<div class="todo">'+(favTodo.length
@@ -711,13 +759,14 @@ document.addEventListener("click", function(e){
   var c = t.closest("[data-f]");
   if(c){ st[c.getAttribute("data-f")] = c.getAttribute("data-v"); update(); return; }
   var fb = t.closest(".fav");
-  if(fb){ var k = fb.getAttribute("data-k"); if(FAV[k]) delete FAV[k]; else FAV[k]=true; saveFav(); if(st.favOnly) update(); else { var on=!!FAV[k]; fb.setAttribute("aria-pressed",on); fb.textContent = on?"★ Favorite":"☆ Favorite"; renderFavs(); renderTrip(); MAP.update(); } return; }
+  if(fb){ var k = fb.getAttribute("data-k"); if(FAV[k]) delete FAV[k]; else FAV[k]=true; saveFav(); cloudFav(k, FAV[k]); if(st.favOnly) update(); else { var on=!!FAV[k]; fb.setAttribute("aria-pressed",on); fb.textContent = on?"★ Favorite":"☆ Favorite"; renderFavs(); renderTrip(); MAP.update(); } return; }
   var bk = t.closest("[data-book]");
   if(bk){ openBookForm(+bk.getAttribute("data-book")); return; }
   var ub = t.closest("[data-unbook]");
-  if(ub){ delete BOOK[BYID[+ub.getAttribute("data-unbook")].n]; saveBook(); update(); return; }
+  if(ub){ var un = BYID[+ub.getAttribute("data-unbook")].n; delete BOOK[un]; saveBook(); update(); cloudDeleteBooking(un); return; }
   var bc = t.closest("[data-bookcancel]");
   if(bc){ var sl = bc.closest(".bookslot"); if(sl) sl.innerHTML = ""; return; }
+  if(t.id==="bLock"){ CLOUD.pass = ""; lsSet("madridTripPass", ""); setCloud("off"); renderTrip(); return; }
   if(t.id==="bShare"){
     var url = location.origin + location.pathname + "#trip=" + encodeState(), msg = document.getElementById("shareMsg");
     var show = function(){ var box = document.getElementById("shareBox"); box.innerHTML = '<input class="linkout" id="shareLink" readonly value="'+esc(url)+'">'; var i = box.querySelector("input"); i.focus(); i.select(); msg.textContent = "Select and copy this link"; };
@@ -725,7 +774,7 @@ document.addEventListener("click", function(e){
     return;
   }
   var rm = t.closest("[data-r]");
-  if(rm){ delete FAV[rm.getAttribute("data-r")]; saveFav(); update(); return; }
+  if(rm){ var rn = rm.getAttribute("data-r"); delete FAV[rn]; saveFav(); update(); cloudFav(rn, false); return; }
   var sm = t.closest("[data-m]");
   if(sm){ var id = +sm.getAttribute("data-m"); if(matchMedia("(max-width: 900px)").matches) document.getElementById("mapcol").scrollIntoView({behavior:smooth(), block:"start"}); MAP.show(id); return; }
   var go = t.closest("[data-go]");
@@ -738,11 +787,16 @@ document.getElementById("bFilters").onclick = function(){ setPanel(document.getE
 document.getElementById("bFav").onclick = function(){ st.favOnly = !st.favOnly; update(); };
 document.getElementById("bBooked").onclick = function(){ st.bookedOnly = !st.bookedOnly; update(); };
 document.addEventListener("submit", function(e){
+  if(e.target.id==="unlock"){
+    e.preventDefault();
+    var v = document.getElementById("passIn").value.trim(); if(!v) return;
+    CLOUD.pass = v; lsSet("madridTripPass", v); renderTrip(); cloudLoad(); return;
+  }
   var f = e.target.closest && e.target.closest("[data-bf]"); if(!f) return;
   e.preventDefault();
   var it = BYID[+f.getAttribute("data-bf")];
   BOOK[it.n] = {d:f.elements.d.value, t:f.elements.t.value || "21:00", p:f.elements.p.value, note:f.elements.note.value.trim()};
-  saveBook(); update();
+  saveBook(); update(); cloudSaveBooking(it.n);
   var card = document.querySelector('.card[data-id="'+it.id+'"]'); if(card) card.scrollIntoView({block:"nearest"});
 });
 document.getElementById("bClear").onclick = clearFilters;
@@ -760,6 +814,7 @@ mapKey();
 importFromHash();
 buildChips(); renderList(); renderFavs(); renderTrip();
 startMap(); MAP.update();
+cloudLoad();
 </script>
 </body>
 </html>
