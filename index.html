@@ -95,6 +95,25 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--fav);outline-offset
 .btn.booked{border-color:var(--t1);color:var(--t1)}
 .mk.isbooked{width:24px;height:24px;margin:-2px 0 0 -2px;font-size:13px;font-weight:700}
 @media (max-width:900px){ .days{grid-template-columns:repeat(2,minmax(0,1fr))} }
+/* Add / edit a place */
+.placeform{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.placeform h2{grid-column:1/-1;margin:0;font-size:17px;letter-spacing:-.01em;text-transform:none;color:var(--ink)}
+.placeform .full{grid-column:1/-1}
+.placeform label{display:grid;gap:3px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.placeform input,.placeform select,.placeform textarea{min-height:34px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;font-size:14px;text-transform:none;letter-spacing:0;width:100%}
+.placeform textarea{min-height:64px;resize:vertical}
+.placeform .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.placeform .row input[type=text]{flex:1 1 220px;width:auto}
+.placeform .chk{display:inline-flex;align-items:center;gap:6px;font-size:13px;text-transform:none;letter-spacing:0;color:var(--ink)}
+.placeform .chk input{width:auto;min-height:0}
+.placeform .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pfmsg{font-size:13px;color:var(--muted)}
+.pfmsg.err{color:var(--t4)}
+.pfmsg.ok{color:var(--t1)}
+.addtag{font-size:11px;color:var(--muted)}
+.mk.pickmk{background:var(--ink);color:var(--bg);font-weight:700;font-size:14px;cursor:grab}
+.pickhint{position:absolute;bottom:52px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;gap:8px;align-items:center;padding:6px 6px 6px 12px;border-radius:999px;background:var(--card);border:1px solid var(--line);box-shadow:0 2px 8px rgba(0,0,0,.25);font-size:13px;white-space:nowrap}
+@media (max-width:640px){ .placeform{grid-template-columns:minmax(0,1fr)} }
 .favrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding-block:10px;border-bottom:1px solid var(--line);font-size:13px}
 .favrow .chip{border-color:var(--fav);color:var(--fav)}
 .favrow a{color:var(--ink);margin-left:4px}
@@ -193,6 +212,7 @@ footer{font-size:12px;color:var(--muted);margin-top:28px}
     <button type="button" class="btn" id="bFilters" aria-expanded="false" aria-controls="panel">Filters <span class="n" id="nActive"></span></button>
     <button type="button" class="btn" id="bFav" aria-pressed="false">★ Favorites only</button>
     <button type="button" class="btn" id="bBooked" aria-pressed="false">✓ Booked only</button>
+    <button type="button" class="btn" id="bAdd" aria-expanded="false" aria-controls="addPanel">+ Add a place</button>
     <button type="button" class="linkbtn" id="bClear" hidden>Clear filters</button>
     <span class="count" id="count"></span>
   </div>
@@ -201,6 +221,7 @@ footer{font-size:12px;color:var(--muted);margin-top:28px}
     <div class="frow"><div class="flabel">Type of food</div><div class="chips" id="chipsT" role="group" aria-label="Filter by type of food"></div></div>
     <div class="frow"><div class="flabel">Area</div><div class="chips" id="chipsA" role="group" aria-label="Filter by area"></div></div>
   </div>
+  <div id="addPanel" hidden></div>
   <div class="favrow" id="favs" hidden></div>
 
   <div class="main">
@@ -209,6 +230,7 @@ footer{font-size:12px;color:var(--muted);margin-top:28px}
       <div class="mapbox">
         <div id="map" role="region" aria-label="Map of restaurants"></div>
         <button type="button" class="btn backall" id="backAll" hidden>← Back to all places</button>
+        <div class="pickhint" id="pickHint" hidden><span>Tap the map to drop the pin, drag to adjust</span><button type="button" class="btn" id="pickDone">Done</button></div>
         <div class="mapkey" id="mapkey"></div>
       </div>
     </div>
@@ -381,8 +403,40 @@ var AREA = {
  "Castizo":"Not confirmed","Pelotari":"Not confirmed","Raza":"Not confirmed","Jack's Library":"Not confirmed","Sushita":"Not confirmed"
 };
 
-var ITEMS = {}, BYID = {}, ALL = [];
-DATA.forEach(function(c){ c.items.forEach(function(it){ it.id = ALL.length+1; it.tier = tierOf(it); ALL.push(it); ITEMS[it.n]=it; BYID[it.id]=it; }); });
+/* ---------- Built-in places + places added from the page (stored in the cloud, cached on this device) ---------- */
+var ITEMS = {}, BYID = {}, ALL = [], NEXTID = 0, PIDS = {};
+var BASE = DATA, BASE_GEO = GEO, BASE_TYPE = TYPE, BASE_AREA = AREA;
+BASE.forEach(function(c){ c.items.forEach(function(it){ it.id = ++NEXTID; it.tier = tierOf(it); }); });
+var USER = [];
+try{ USER = JSON.parse(lsGet("madridPlaces")||"[]") || []; }catch(e){ USER = []; }
+function saveUserCache(){ lsSet("madridPlaces", JSON.stringify(USER)); }
+function numOrNull(v){ if(v===""||v==null) return null; var n = Math.round(+v); return isFinite(n) && n>=0 ? n : null; }
+function isUrl(s){ return /^https?:\/\/\S+$/i.test(String(s||"")); }
+function rebuild(){
+  GEO = Object.assign({}, BASE_GEO); TYPE = Object.assign({}, BASE_TYPE); AREA = Object.assign({}, BASE_AREA);
+  DATA = BASE.map(function(c){ return {cat:c.cat, hint:c.hint, items:c.items.slice()}; });
+  USER.forEach(function(u){
+    if(!u || !u.n || !u.id) return;
+    var lo = numOrNull(u.lo), hi = numOrNull(u.hi);
+    if(lo==null) lo = hi; if(hi==null) hi = lo; if(lo!=null && lo>hi){ var x = lo; lo = hi; hi = x; }
+    var it = {n:String(u.n), a:u.a || "Madrid", f:u.f || "", lo:lo, hi:hi, b:lo==null ? "none" : (u.b==="src" ? "src" : "est"),
+      note:u.note || "", l:(u.l || []).filter(function(x){ return x && isUrl(x[1]); }), web:isUrl(u.web) ? u.web : "", user:true, pid:u.id};
+    if(!PIDS[u.id]) PIDS[u.id] = ++NEXTID;
+    it.id = PIDS[u.id]; it.tier = tierOf(it);
+    var cat = String(u.cat || "").trim() || "Added by you", c = null;
+    for(var i=0;i<DATA.length;i++) if(DATA[i].cat===cat){ c = DATA[i]; break; }
+    if(!c){ c = {cat:cat, hint:"", items:[]}; DATA.push(c); }
+    c.items.push(it);
+    if(u.lat!=null && u.lng!=null && isFinite(+u.lat) && isFinite(+u.lng) && u.lat!=="" && u.lng!=="") GEO[it.n] = u.approx ? [+u.lat, +u.lng, 1] : [+u.lat, +u.lng];
+    TYPE[it.n] = String(u.type || "").trim() || "Other";
+    AREA[it.n] = String(u.area || "").trim() || "Not confirmed";
+  });
+  ITEMS = {}; BYID = {}; ALL = [];
+  DATA.forEach(function(c){ c.items.forEach(function(it){ ALL.push(it); ITEMS[it.n]=it; BYID[it.id]=it; }); });
+}
+function typeList(){ var out = TYPE_ORDER.slice(); Object.keys(TYPE).forEach(function(n){ var t = TYPE[n]; if(ITEMS[n] && out.indexOf(t)<0) out.push(t); }); return out; }
+function areaList(){ var out = AREA_ORDER.filter(function(a){ return a!=="Not confirmed"; }); Object.keys(AREA).forEach(function(n){ var a = AREA[n]; if(ITEMS[n] && a!=="Not confirmed" && out.indexOf(a)<0) out.push(a); }); return out.concat(["Not confirmed"]); }
+rebuild();
 
 /* ---------- State ---------- */
 var st = {p:"all", t:"all", a:"all", favOnly:false, bookedOnly:false};
@@ -411,8 +465,8 @@ function chipRow(id, opts, key){
 }
 function buildChips(){
   chipRow("chipsP", [{k:"all",t:"All"}].concat(TIERS.map(function(x){ return {k:x.k, t:x.s+"  "+x.t, cls:"tier"+x.k, dot:1}; })).concat([{k:"0",t:"Price not found",cls:"tier0",dot:1}]), "p");
-  chipRow("chipsT", [{k:"all",t:"All"}].concat(TYPE_ORDER.map(function(t){ return {k:t,t:t}; })), "t");
-  chipRow("chipsA", [{k:"all",t:"All"}].concat(AREA_ORDER.map(function(t){ return {k:t,t:t}; })), "a");
+  chipRow("chipsT", [{k:"all",t:"All"}].concat(typeList().map(function(t){ return {k:t,t:t}; })), "t");
+  chipRow("chipsA", [{k:"all",t:"All"}].concat(areaList().map(function(t){ return {k:t,t:t}; })), "a");
   var n = activeCount();
   document.getElementById("nActive").textContent = n ? n : "";
   document.getElementById("bClear").hidden = !(n || st.favOnly || st.bookedOnly);
@@ -438,19 +492,20 @@ function renderList(){
     c.items.forEach(function(it){
       if(!passes(it)) return;
       total++;
-      var links = favBtn(it) + '<a class="btn" href="'+site(it.n)+'" target="_blank" rel="noopener">Menu / site</a>';
+      var links = favBtn(it) + '<a class="btn" href="'+esc(it.web || site(it.n))+'" target="_blank" rel="noopener">Menu / site</a>';
       it.l.forEach(function(x){ links += '<a class="btn" href="'+esc(x[1])+'" target="_blank" rel="noopener">'+esc(x[0])+'</a>'; });
       links += '<a class="btn" href="'+maps(it.n)+'" target="_blank" rel="noopener">Google Maps</a>';
       if(GEO[it.n]) links += '<button type="button" class="btn" data-m="'+it.id+'">Show on map</button>';
       links += BOOK[it.n] ? '<button type="button" class="btn booked" data-book="'+it.id+'">✓ Edit booking</button>' : '<button type="button" class="btn" data-book="'+it.id+'">Mark as booked</button>';
+      if(it.user) links += '<button type="button" class="btn" data-edit="'+esc(it.pid)+'">Edit place</button>';
       cards += '<article class="card tier'+it.tier+'" data-id="'+it.id+'"><div class="top"><div><h3 class="name">'+esc(it.n)+'</h3><p class="addr">'+esc(it.a)+'</p></div>'+
         '<div class="price"><div class="tierbadge" aria-label="Price tier '+(it.tier==="0"?"unknown":it.tier+" of 4")+'">'+tierSym(it.tier)+'</div>'+
-        '<div class="amt">'+rangeText(it)+'</div><div class="conf">'+CONF[it.b]+'</div></div></div>'+
+        '<div class="amt">'+rangeText(it)+'</div><div class="conf">'+CONF[it.b]+'</div>'+(it.user?'<div class="addtag">Added by you</div>':'')+'</div></div>'+
         (it.f?'<p class="friend"><i>Friend says:</i> '+esc(it.f)+'</p>':'')+
         (BOOK[it.n]?'<div class="bookbadge">✓ Booked · '+esc(bookText(BOOK[it.n]))+'</div>':'')+
-        '<p class="note">'+esc(it.note)+'</p><div class="links">'+links+'</div><div class="bookslot"></div></article>';
+        (it.note?'<p class="note">'+esc(it.note)+'</p>':'')+'<div class="links">'+links+'</div><div class="bookslot"></div></article>';
     });
-    if(cards) out += '<h2>'+esc(c.cat)+'</h2><p class="cathint">'+esc(c.hint)+'</p>'+cards;
+    if(cards) out += '<h2>'+esc(c.cat)+'</h2>'+(c.hint?'<p class="cathint">'+esc(c.hint)+'</p>':'')+cards;
   });
   document.getElementById("list").innerHTML = out || '<p class="empty">Nothing matches these filters.</p>';
   document.getElementById("count").textContent = "Showing "+total+" of "+ALL.length+" places";
@@ -503,6 +558,7 @@ function cloudLoad(){
   setCloud("busy");
   return rpc("trip_get", {p:CLOUD.pass}).then(function(data){
     var sb = data.bookings || {}, sf = data.favorites || [];
+    if(data.places){ USER = data.places; saveUserCache(); rebuild(); if(PF.open) renderPlaceForm(); }
     // Upload anything that exists only on this device (e.g. bookings made before sync existed)
     var ups = [];
     Object.keys(BOOK).forEach(function(n){ if(!sb[n]){ sb[n] = BOOK[n]; ups.push(["b", n]); } });
@@ -629,16 +685,23 @@ function leafletMap(){
     var g = GEO[it.n], cls = "mk tier"+it.tier+(g[2]?" approx":"")+(BOOK[it.n]?" isbooked":FAV[it.n]?" isfav":"")+(hot?" hot":"");
     return L.divIcon({className:"", html:'<div class="'+cls+'">'+(BOOK[it.n]?"✓":FAV[it.n]?"★":"")+'</div>', iconSize:[20,20], iconAnchor:[10,10], popupAnchor:[0,-10]});
   }
-  ALL.forEach(function(it){
-    var g = GEO[it.n]; if(!g) return;
-    var m = L.marker([g[0],g[1]], {icon:icon(it), title:it.n, riseOnHover:true, keyboard:true});
-    m.bindPopup(function(){ return popupHtml(it); }, {maxWidth:260});
-    m.on("mouseover", function(){ hotCard(it.id, true); });
-    m.on("mouseout",  function(){ hotCard(it.id, false); });
-    m.on("popupopen", function(){ hotCard(it.id, true); });
-    m.on("popupclose", function(){ hotCard(it.id, false); });
-    markers[it.id] = m;
-  });
+  function ensureMarker(it){
+    var g = GEO[it.n], m = markers[it.id];
+    if(!g) return null;
+    if(m){ var ll = m.getLatLng(); if(ll.lat!==g[0] || ll.lng!==g[1]) m.setLatLng([g[0],g[1]]); m.options.title = it.n; return m; }
+    var id = it.id;
+    m = L.marker([g[0],g[1]], {icon:icon(it), title:it.n, riseOnHover:true, keyboard:true});
+    m.bindPopup(function(){ return popupHtml(BYID[id]); }, {maxWidth:260});
+    m.on("mouseover", function(){ hotCard(id, true); });
+    m.on("mouseout",  function(){ hotCard(id, false); });
+    m.on("popupopen", function(){ hotCard(id, true); });
+    m.on("popupclose", function(){ hotCard(id, false); });
+    markers[id] = m;
+    return m;
+  }
+  /* Dropping a pin for a new place */
+  var pickPin = null, picking = false;
+  map.on("click", function(e){ if(picking) onPinMoved(e.latlng.lat, e.latlng.lng, true); });
   var first = true, home = null, back = document.getElementById("backAll");
   function showBack(){ back.hidden = false; }
   function reset(){
@@ -652,7 +715,7 @@ function leafletMap(){
   function update(){
     group.clearLayers();
     var shown = [];
-    ALL.forEach(function(it){ var m = markers[it.id]; if(!m) return; m.setIcon(icon(it)); if(passes(it)){ group.addLayer(m); shown.push(m.getLatLng()); } });
+    ALL.forEach(function(it){ var m = ensureMarker(it); if(!m) return; m.setIcon(icon(it)); if(passes(it)){ group.addLayer(m); shown.push(m.getLatLng()); } });
     if(first){ first = false; if(shown.length){ home = L.latLngBounds(shown); map.fitBounds(home, {padding:[30,30], maxZoom:15}); homeZoom = map.getZoom(); } }
   }
   return {
@@ -665,7 +728,17 @@ function leafletMap(){
       if(group.zoomToShowLayer) group.zoomToShowLayer(m, function(){ m.openPopup(); });
       else { map.setView(m.getLatLng(), 17); m.openPopup(); }
     },
-    resize: function(){ map.invalidateSize(); }
+    resize: function(){ map.invalidateSize(); },
+    canPick: true,
+    picking: function(on){ picking = on; map.getContainer().style.cursor = on ? "crosshair" : ""; if(on) map.closePopup(); },
+    setPin: function(ll, center){
+      if(!ll){ if(pickPin){ map.removeLayer(pickPin); pickPin = null; } return; }
+      if(!pickPin){
+        pickPin = L.marker(ll, {draggable:true, zIndexOffset:2000, title:"New place", icon:L.divIcon({className:"", html:'<div class="mk pickmk">+</div>', iconSize:[20,20], iconAnchor:[10,10]})}).addTo(map);
+        pickPin.on("dragend", function(){ var p = pickPin.getLatLng(); onPinMoved(p.lat, p.lng, false); });
+      } else pickPin.setLatLng(ll);
+      if(center) map.setView(ll, Math.max(map.getZoom(), 16));
+    }
   };
 }
 
@@ -719,7 +792,7 @@ function sketchMap(){
   svg.addEventListener("click", pick);
   svg.addEventListener("keydown", function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); pick(e); } });
   var api = {
-    update: update, hot: hot, resize: function(){},
+    update: update, hot: hot, resize: function(){}, picking: function(){}, setPin: function(){},
     reset: function(){ var prev = sel; sel = null; if(prev) hot(prev,false); document.getElementById("backAll").hidden = true; },
     show: function(id){ var prev = sel; sel = id; if(prev) hot(prev,false); if(!passes(BYID[id])) clearFilters(); hot(id, true); document.getElementById("backAll").hidden = false; }
   };
@@ -737,7 +810,7 @@ function goCard(id){
   if(card){ card.scrollIntoView({behavior:smooth(), block:"center"}); hotCard(id,true); setTimeout(function(){ hotCard(id,false); }, 1600); }
 }
 
-var MAP = {update:function(){}, hot:function(){}, show:function(){}, reset:function(){}, resize:function(){}};
+var MAP = {update:function(){}, hot:function(){}, show:function(){}, reset:function(){}, resize:function(){}, picking:function(){}, setPin:function(){}};
 function startMap(){
   if(window.L){
     try{
@@ -753,6 +826,215 @@ function startMap(){
   MAP = sketchMap(); // only when the map library can't load (e.g. inside a Claude artifact)
 }
 
+/* ---------- Add / edit a place ---------- */
+var PF = {open:false, pid:null, loc:null, approx:false, removeArmed:false};
+function userById(pid){ for(var i=0;i<USER.length;i++) if(USER[i].id===pid) return USER[i]; return null; }
+function opts(list){ return list.map(function(x){ return '<option value="'+esc(x)+'"></option>'; }).join(""); }
+function pfMsg(text, kind){ var el = document.getElementById("pfMsg"); if(el){ el.textContent = text || ""; el.className = "pfmsg full"+(kind?" "+kind:""); } }
+function locText(){ return PF.loc ? PF.loc[0].toFixed(5)+", "+PF.loc[1].toFixed(5) : ""; }
+function openPlaceForm(pid){
+  PF.open = true; PF.pid = pid || null; PF.removeArmed = false;
+  var u = pid ? userById(pid) : null;
+  PF.loc = u && u.lat!=null && u.lat!=="" ? [+u.lat, +u.lng] : null; PF.approx = !!(u && u.approx);
+  renderPlaceForm();
+  if(PF.loc) MAP.setPin(PF.loc, false);
+  var panel = document.getElementById("addPanel");
+  panel.scrollIntoView({behavior:smooth(), block:"start"});
+  var nm = document.getElementById("pfName"); if(nm) nm.focus({preventScroll:true});
+}
+function closePlaceForm(){
+  stopPick(false);
+  PF.open = false; PF.pid = null; PF.loc = null;
+  MAP.setPin(null);
+  var panel = document.getElementById("addPanel"); panel.hidden = true; panel.innerHTML = "";
+  document.getElementById("bAdd").setAttribute("aria-expanded", "false");
+}
+function renderPlaceForm(){
+  var panel = document.getElementById("addPanel");
+  panel.hidden = false;
+  document.getElementById("bAdd").setAttribute("aria-expanded", "true");
+  if(!CLOUD.pass){
+    panel.innerHTML = '<div class="placeform"><h2>Add a place</h2><p class="pfmsg full">New places are saved to the cloud so they show up on every device. Enter your trip passcode in “Your trip” above (Unlock &amp; sync), then come back here.</p><div class="row full"><button type="button" class="btn" id="pfCancel">Close</button></div></div>';
+    return;
+  }
+  var u = PF.pid ? (userById(PF.pid) || {}) : {};
+  var cats = DATA.map(function(c){ return c.cat; });
+  var links = (u.l || []).map(function(x){ return x[0]+" | "+x[1]; }).join("\n");
+  function v(x){ return esc(x==null ? "" : x); }
+  panel.innerHTML = '<form class="placeform" id="placeForm" novalidate>'+
+    '<h2>'+(PF.pid ? "Edit "+esc(u.n || "place") : "Add a place")+'</h2>'+
+    '<label class="full">Name *<input id="pfName" name="n" type="text" required maxlength="120" value="'+v(u.n)+'" placeholder="e.g. Sobrino de Botín" autocomplete="off"></label>'+
+    '<label>Section<input name="cat" type="text" list="dlCats" maxlength="80" value="'+v(u.cat)+'" placeholder="Added by you"></label>'+
+    '<label>Type of food<input name="type" type="text" list="dlTypes" maxlength="40" value="'+v(u.type)+'" placeholder="e.g. Spanish"></label>'+
+    '<label class="full">Address<input id="pfAddr" name="a" type="text" maxlength="160" value="'+v(u.a)+'" placeholder="Street and number, e.g. Cuchilleros 17"></label>'+
+    '<label>Area<input id="pfArea" name="area" type="text" list="dlAreas" maxlength="40" value="'+v(u.area)+'" placeholder="Filled in from the pin if left blank"></label>'+
+    '<label>Map location<input id="pfLoc" name="loc" type="text" value="'+esc(locText())+'" placeholder="Found from the address, or paste a Google Maps link"></label>'+
+    '<div class="row full"><button type="button" class="btn" id="pfFind">Find from address</button><button type="button" class="btn" id="pfPick">Pick on map</button>'+
+      '<label class="chk"><input type="checkbox" id="pfApprox"'+(PF.approx?" checked":"")+'> Approximate (street or area only)</label></div>'+
+    '<div class="two"><label>Price from € pp<input name="lo" type="number" min="0" max="1000" inputmode="numeric" value="'+v(u.lo)+'"></label><label>to € pp<input name="hi" type="number" min="0" max="1000" inputmode="numeric" value="'+v(u.hi)+'"></label></div>'+
+    '<label>Price is<select name="b"><option value="est"'+(u.b!=="src"?" selected":"")+'>Estimate</option><option value="src"'+(u.b==="src"?" selected":"")+'>Sourced</option></select></label>'+
+    '<label class="full">Friend says<input name="f" type="text" maxlength="160" value="'+v(u.f)+'" placeholder="Short tip, e.g. Order the cochinillo"></label>'+
+    '<label class="full">Notes<textarea name="note" maxlength="1500" placeholder="What to order, hours, how to book…">'+v(u.note)+'</textarea></label>'+
+    '<label class="full">Website or menu<input name="web" type="url" maxlength="400" value="'+v(u.web)+'" placeholder="https://…"></label>'+
+    '<label class="full">Other links (one per line: Label | URL)<textarea name="l" maxlength="2000" placeholder="Time Out | https://…">'+esc(links)+'</textarea></label>'+
+    '<div class="row full"><button type="submit" class="btn">'+(PF.pid ? "Save changes" : "Add to guide")+'</button>'+
+      (PF.pid ? '<button type="button" class="btn" id="pfRemove">Remove from guide</button>' : '')+
+      '<button type="button" class="btn" id="pfCancel">Cancel</button></div>'+
+    '<p class="pfmsg full" id="pfMsg" aria-live="polite"></p>'+
+    '<datalist id="dlCats">'+opts(cats)+'</datalist><datalist id="dlTypes">'+opts(typeList())+'</datalist><datalist id="dlAreas">'+opts(areaList().filter(function(a){ return a!=="Not confirmed"; }))+'</datalist>'+
+    '</form>';
+  var f = document.getElementById("placeForm");
+  f.elements.loc.addEventListener("change", function(){
+    var s = this.value.trim();
+    if(!s){ PF.loc = null; MAP.setPin(null); pfMsg(""); return; }
+    var ll = parseLoc(s);
+    if(ll){ PF.loc = ll; this.value = locText(); MAP.setPin(ll, true); suggestArea(); pfMsg("Pin set.", "ok"); }
+    else pfMsg("Couldn’t read a location there. Paste a Google Maps link that shows the place, or “40.4153, -3.7074”.", "err");
+  });
+  f.elements.a.addEventListener("change", function(){ if(!PF.loc && this.value.trim()) findLocation(false); });
+  document.getElementById("pfApprox").addEventListener("change", function(){ PF.approx = this.checked; });
+}
+/* Accepts "lat, lng" or a Google Maps link with coordinates in it */
+function parseLoc(s){
+  s = String(s || "").trim(); if(!s) return null;
+  var m = s.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) || s.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
+          s.match(/[?&](?:q|query|ll|center|destination)=(-?\d+\.\d+)(?:,|%2C)\s*(-?\d+\.\d+)/i) || s.match(/^(-?\d{1,2}\.\d+)\s*[,;\s]\s*(-?\d{1,3}\.\d+)$/);
+  if(!m) return null;
+  var lat = +m[1], lng = +m[2];
+  return (isFinite(lat) && isFinite(lng) && Math.abs(lat)<=90 && Math.abs(lng)<=180) ? [lat, lng] : null;
+}
+function setLoc(ll, approx){
+  PF.loc = ll; var el = document.getElementById("pfLoc"); if(el) el.value = locText();
+  if(approx!=null){ PF.approx = approx; var c = document.getElementById("pfApprox"); if(c) c.checked = approx; }
+  suggestArea();
+}
+function onPinMoved(lat, lng, fromClick){
+  setLoc([lat, lng], fromClick ? false : null);
+  MAP.setPin(PF.loc, false);
+  pfMsg("Pin set.", "ok");
+}
+/* Area from the closest place already on the map (within ~1.2 km) */
+function suggestArea(){
+  var el = document.getElementById("pfArea"); if(!el || el.value.trim() || !PF.loc) return;
+  var best = null, bd = 1e9, cos = Math.cos(PF.loc[0]*Math.PI/180);
+  Object.keys(BASE_GEO).forEach(function(n){
+    var g = BASE_GEO[n], a = BASE_AREA[n]; if(!a || a==="Not confirmed") return;
+    var dy = (g[0]-PF.loc[0])*111, dx = (g[1]-PF.loc[1])*111*cos, d = dx*dx+dy*dy;
+    if(d < bd){ bd = d; best = a; }
+  });
+  if(best && bd < 1.44) el.value = best;
+}
+/* Address lookup with OpenStreetMap's Nominatim, limited to the Madrid area */
+function geocode(text){
+  var url = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=es&bounded=1&viewbox=-3.85,40.53,-3.53,40.32&q="+q(text);
+  return fetch(url, {headers:{"Accept":"application/json"}}).then(function(r){ if(!r.ok) throw new Error("lookup failed"); return r.json(); })
+    .then(function(a){ return a && a[0] ? a[0] : null; });
+}
+function findLocation(manual){
+  var f = document.getElementById("placeForm"); if(!f) return Promise.resolve(null);
+  var addr = f.elements.a.value.trim(), name = f.elements.n.value.trim();
+  if(!addr && !name){ pfMsg("Type a name or address first.", "err"); return Promise.resolve(null); }
+  pfMsg("Looking it up…");
+  var tries = [];
+  if(addr) tries.push(addr + ", Madrid");
+  if(name) tries.push(name + (addr ? ", " + addr : "") + ", Madrid");
+  if(name && addr) tries.push(name + ", Madrid");
+  var i = 0;
+  function next(){
+    if(i >= tries.length){ pfMsg(manual ? "Couldn’t find that address. Try “Pick on map” or paste a Google Maps link." : "", manual ? "err" : ""); return null; }
+    return geocode(tries[i++]).then(function(r){
+      if(!r) return next();
+      var t = r.addresstype || r.type || "", approx = /^(road|street|suburb|neighbourhood|quarter|city_district|city|borough)$/.test(t) && !/\d/.test(addr);
+      setLoc([+(+r.lat).toFixed(6), +(+r.lon).toFixed(6)], approx);
+      MAP.setPin(PF.loc, true);
+      pfMsg((approx ? "Found the street only (pin marked approximate): " : "Found: ") + String(r.display_name || "").split(",").slice(0,3).join(","), "ok");
+      return PF.loc;
+    });
+  }
+  return next().catch(function(){ pfMsg("Address lookup isn’t available right now. Use “Pick on map” or paste a Google Maps link.", "err"); return null; });
+}
+function startPick(){
+  if(!MAP.canPick){ pfMsg("Picking needs the full map, which didn’t load. Paste a Google Maps link instead.", "err"); return; }
+  MAP.picking(true);
+  document.getElementById("pickHint").hidden = false;
+  document.getElementById("mapcol").scrollIntoView({behavior:smooth(), block:"start"});
+}
+function stopPick(backToForm){
+  MAP.picking(false);
+  document.getElementById("pickHint").hidden = true;
+  if(backToForm && PF.open) document.getElementById("addPanel").scrollIntoView({behavior:smooth(), block:"start"});
+}
+function readLinks(s){
+  return String(s || "").split(/\n+/).map(function(line){
+    line = line.trim(); if(!line) return null;
+    var m = line.match(/^(.*?)\s*[|]\s*(https?:\/\/\S+)$/i) || line.match(/^()(https?:\/\/\S+)$/i);
+    if(!m) return null;
+    var label = m[1].trim(); if(!label){ try{ label = new URL(m[2]).hostname.replace(/^www\./, ""); }catch(e){ label = "Link"; } }
+    return [label.slice(0,40), m[2]];
+  }).filter(Boolean).slice(0,8);
+}
+function renameRefs(oldN, newN){
+  if(!oldN || oldN===newN) return;
+  if(BOOK[oldN]){ BOOK[newN] = BOOK[oldN]; delete BOOK[oldN]; saveBook(); cloudSaveBooking(newN).then(function(){ return cloudDeleteBooking(oldN); }); }
+  if(FAV[oldN]){ FAV[newN] = true; delete FAV[oldN]; saveFav(); cloudFav(newN, true).then(function(){ return cloudFav(oldN, false); }); }
+}
+function savePlace(f){
+  var E = f.elements, n = E.n.value.trim().replace(/\s+/g, " ");
+  if(!n){ pfMsg("Give the place a name.", "err"); E.n.focus(); return; }
+  var clash = ITEMS[n];
+  if(clash && clash.pid !== PF.pid){ pfMsg("“"+n+"” is already in the guide. Use a slightly different name (e.g. add the street).", "err"); E.n.focus(); return; }
+  var web = E.web.value.trim();
+  if(web && !/^https?:\/\//i.test(web)) web = "https://" + web;
+  if(web && !isUrl(web)){ pfMsg("The website doesn’t look like a link.", "err"); E.web.focus(); return; }
+  var lo = numOrNull(E.lo.value), hi = numOrNull(E.hi.value);
+  if(lo!=null && hi!=null && lo>hi){ var x = lo; lo = hi; hi = x; }
+  var typed = E.loc.value.trim();
+  if(typed && typed !== locText()){ var ll = parseLoc(typed); if(ll) PF.loc = ll; }
+  var btn = f.querySelector('button[type="submit"]');
+  var go = function(){
+    var old = PF.pid ? userById(PF.pid) : null;
+    var data = {n:n, cat:E.cat.value.trim(), type:E.type.value.trim(), a:E.a.value.trim(), area:E.area.value.trim(),
+      lat:PF.loc ? PF.loc[0] : null, lng:PF.loc ? PF.loc[1] : null, approx:!!(PF.loc && PF.approx),
+      lo:lo, hi:hi, b:E.b.value, f:E.f.value.trim(), note:E.note.value.trim(), web:web, l:readLinks(E.l.value)};
+    btn.disabled = true; pfMsg("Saving…");
+    return rpc("trip_save_place", {p:CLOUD.pass, pid:PF.pid, pdata:data}).then(function(id){
+      data.id = id;
+      var replaced = false;
+      USER = USER.map(function(x){ if(x.id===id){ replaced = true; return data; } return x; });
+      if(!replaced) USER.push(data);
+      saveUserCache();
+      renameRefs(old && old.n, n);
+      rebuild();
+      var wasNew = !PF.pid;
+      closePlaceForm();
+      update();
+      setCloud("ok");
+      var nid = PIDS[id];
+      setTimeout(function(){ goCard(nid); }, 50);
+      return wasNew;
+    }, function(e){
+      btn.disabled = false;
+      if(e.status===400 || /passcode/i.test(e.message)) pfMsg("Your passcode was rejected. Lock this device and unlock again.", "err");
+      else if(e.status===404) pfMsg("The cloud isn’t set up for adding places yet.", "err");
+      else pfMsg("Couldn’t save. Check your connection and try again.", "err");
+    });
+  };
+  // No pin yet but there is an address: look it up first so the place lands on the map
+  if(!PF.loc && (E.a.value.trim())){ btn.disabled = true; findLocation(false).then(function(){ btn.disabled = false; go(); }); }
+  else go();
+}
+function removePlace(btn){
+  if(!PF.pid) return;
+  if(!PF.removeArmed){ PF.removeArmed = true; btn.textContent = "Tap again to remove"; btn.style.borderColor = "var(--t4)"; btn.style.color = "var(--t4)"; return; }
+  var u = userById(PF.pid), pid = PF.pid; btn.disabled = true; pfMsg("Removing…");
+  rpc("trip_remove_place", {p:CLOUD.pass, pid:pid}).then(function(){
+    USER = USER.filter(function(x){ return x.id !== pid; }); saveUserCache();
+    if(u && BOOK[u.n]){ delete BOOK[u.n]; saveBook(); cloudDeleteBooking(u.n); }
+    if(u && FAV[u.n]){ delete FAV[u.n]; saveFav(); cloudFav(u.n, false); }
+    rebuild(); closePlaceForm(); update();
+  }, function(){ btn.disabled = false; pfMsg("Couldn’t remove it. Check your connection and try again.", "err"); });
+}
+
 /* ---------- Events ---------- */
 document.addEventListener("click", function(e){
   var t = e.target; if(!t.closest) return;
@@ -766,7 +1048,15 @@ document.addEventListener("click", function(e){
   if(ub){ var un = BYID[+ub.getAttribute("data-unbook")].n; delete BOOK[un]; saveBook(); update(); cloudDeleteBooking(un); return; }
   var bc = t.closest("[data-bookcancel]");
   if(bc){ var sl = bc.closest(".bookslot"); if(sl) sl.innerHTML = ""; return; }
-  if(t.id==="bLock"){ CLOUD.pass = ""; lsSet("madridTripPass", ""); setCloud("off"); renderTrip(); return; }
+  if(t.id==="bLock"){ CLOUD.pass = ""; lsSet("madridTripPass", ""); setCloud("off"); renderTrip(); if(PF.open) renderPlaceForm(); return; }
+  if(t.id==="bAdd"){ if(PF.open && !PF.pid) closePlaceForm(); else openPlaceForm(null); return; }
+  var ed = t.closest("[data-edit]");
+  if(ed){ openPlaceForm(ed.getAttribute("data-edit")); return; }
+  if(t.id==="pfCancel"){ closePlaceForm(); return; }
+  if(t.id==="pfFind"){ findLocation(true); return; }
+  if(t.id==="pfPick"){ startPick(); return; }
+  if(t.id==="pickDone"){ stopPick(true); return; }
+  if(t.id==="pfRemove"){ removePlace(t); return; }
   if(t.id==="bShare"){
     var url = location.origin + location.pathname + "#trip=" + encodeState(), msg = document.getElementById("shareMsg");
     var show = function(){ var box = document.getElementById("shareBox"); box.innerHTML = '<input class="linkout" id="shareLink" readonly value="'+esc(url)+'">'; var i = box.querySelector("input"); i.focus(); i.select(); msg.textContent = "Select and copy this link"; };
@@ -790,8 +1080,9 @@ document.addEventListener("submit", function(e){
   if(e.target.id==="unlock"){
     e.preventDefault();
     var v = document.getElementById("passIn").value.trim(); if(!v) return;
-    CLOUD.pass = v; lsSet("madridTripPass", v); renderTrip(); cloudLoad(); return;
+    CLOUD.pass = v; lsSet("madridTripPass", v); renderTrip(); cloudLoad(); if(PF.open) renderPlaceForm(); return;
   }
+  if(e.target.id==="placeForm"){ e.preventDefault(); savePlace(e.target); return; }
   var f = e.target.closest && e.target.closest("[data-bf]"); if(!f) return;
   e.preventDefault();
   var it = BYID[+f.getAttribute("data-bf")];

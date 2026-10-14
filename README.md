@@ -10,6 +10,9 @@ Open `index.html` in a browser, or `npx serve .`
 ## Deploy
 Import the repo in Vercel with Framework Preset **Other**, no build command, output directory `.` (root).
 
-## Editing
+## Adding places from the page
+Click **+ Add a place** (after unlocking with the trip passcode). Places are saved to Supabase (`private.trip_places`, see `supabase/add_places.sql`) and appear like the built-in ones: card, price tier, filters, map pin, favorites and bookings. Use **Edit place** on a card to change or remove one. Addresses are looked up with OpenStreetMap Nominatim; you can also pick the spot on the map or paste a Google Maps link.
+
+## Editing the built-in list
 - Restaurants live in the `DATA` array.
 - Map positions live in `GEO` as `[lat, lng]`; add a third value `1` when only the street/area is known (drawn as a hollow pin). Names missing from `GEO` show "Not on map".
