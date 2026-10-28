@@ -7,6 +7,7 @@
 <meta name="description" content="Day-by-day plan for the Madrid trip: flights, hotel, sights, games and booked meals in one place.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <link rel="stylesheet" href="theme.css">
 <style>
 /* Layout: hero with trip stats, a passcode card while locked, day chips, then one section per day: a date block and headline over a timeline of plans and meals sorted by time. Shared look lives in theme.css. */
@@ -77,6 +78,29 @@ a.stat.next:hover{filter:brightness(1.05)}
 .addrow .btn{border-style:dashed;background:transparent;color:var(--muted)}
 .addrow .btn:hover{color:var(--ink)}
 
+/* Each card carries its type's colour: tinted fill, coloured edge and label (the map pins match) */
+.ev:not(.open) .body{background:color-mix(in srgb,var(--tc) 7%,var(--card));border-color:color-mix(in srgb,var(--tc) 28%,var(--line));box-shadow:inset 4px 0 0 var(--tc),var(--shadow)}
+.ev:not(.open) .title{color:color-mix(in srgb,var(--tc) 22%,var(--ink))}
+.ev.next .body{box-shadow:inset 4px 0 0 var(--tc),0 0 0 2px var(--accent),var(--shadow)}
+.num{position:absolute;right:-5px;bottom:-5px;min-width:19px;height:19px;padding:0 4px;border-radius:999px;background:var(--tc);color:var(--card);border:2px solid var(--bg);font:700 10px/15px var(--sans);text-align:center;cursor:pointer}
+.ev.past .num{opacity:.6}
+
+/* Day map: numbered stops in time order, joined by a dashed line */
+.daymap{height:300px;margin:0 0 16px;border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow);background:var(--chip)}
+.daymap .leaflet-tile-pane{filter:grayscale(.75) brightness(1.1) contrast(.82);opacity:.9}
+.daymap.dark-tiles .leaflet-tile-pane{opacity:1;filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.5)}
+.leaflet-container{font-family:inherit}
+.pin{width:28px;height:28px;border-radius:50%;background:var(--tc);color:var(--card);border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 2px 6px rgba(0,0,0,.35);display:grid;place-items:center;font:700 12px/1 var(--sans)}
+.pin.approx{background:var(--card);color:var(--tc);border-color:var(--tc)}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--card);color:var(--ink)}
+.leaflet-popup-content{margin:12px 14px;font-size:13px;line-height:1.4}
+.pop .t{font:600 15px/1.25 var(--serif)}
+.pop .m{color:var(--muted);margin-top:2px}
+.pop a{color:var(--accent);font-weight:600}
+.leaflet-bar a{background:var(--card);color:var(--ink);border-color:var(--line)}
+.leaflet-control-attribution{background:color-mix(in srgb,var(--card) 80%,transparent)!important;color:var(--muted)}
+.leaflet-control-attribution a{color:var(--muted)}
+
 /* Kind colours */
 .k-flight,.k-transfer{--tc:var(--t2)}.k-stay{--tc:var(--t3)}.k-sight{--tc:var(--t1)}.k-food,.k-meal{--tc:var(--accent)}.k-game{--tc:var(--gold)}.k-event{--tc:var(--fav)}.k-other{--tc:var(--t0)}
 .booked{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 8px;border-radius:999px;background:color-mix(in srgb,var(--t1) 15%,var(--card));color:var(--t1);font-size:11px;font-weight:700}
@@ -104,9 +128,10 @@ a.stat.next:hover{filter:brightness(1.05)}
   .tl::before{left:17px}
   .addrow{margin-left:46px}
   .dayhead h2{font-size:23px}
+  .daymap{height:240px}
 }
 @media print{
-  .topbar,.bar,.acts,.addrow,.itemform,.lock,.stat.next{display:none!important}
+  .topbar,.bar,.acts,.addrow,.itemform,.lock,.stat.next,.daymap{display:none!important}
   .ev{break-inside:avoid}
   .ev.past .body,.ev.past .ic{opacity:1}
 }
@@ -133,12 +158,19 @@ a.stat.next:hover{filter:brightness(1.05)}
   <footer>Everything is also kept on this device, so the plan opens without a connection. Prices, hours and kick-off times change: check the day before.</footer>
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script src="data.js"></script>
 <script>
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
 function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
 function lsJson(k, d){ try{ return JSON.parse(lsGet(k)||"null") || d; }catch(e){ return d; } }
+/* Place lookup on OpenStreetMap (Nominatim), limited to Madrid, like the guide's "Find from address" */
+function geocode(text){
+  var url = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=es&bounded=1&viewbox=-3.85,40.53,-3.53,40.32&q="+encodeURIComponent(text);
+  return fetch(url, {headers:{"Accept":"application/json"}}).then(function(r){ if(!r.ok) throw new Error("lookup failed"); return r.json(); })
+    .then(function(a){ return a && a[0] ? a[0] : null; });
+}
 function isUrl(s){ return /^https?:\/\/\S+$/i.test(String(s||"")); }
 
 var KINDS = [
@@ -169,8 +201,8 @@ function savePlan(){ lsSet("madridPlan", JSON.stringify(PLAN)); }
 
 /* Restaurant lookup for meals: built-in list first, then places added from the guide */
 function place(n){
-  for(var i=0;i<DATA.length;i++) for(var j=0;j<DATA[i].items.length;j++){ var it = DATA[i].items[j]; if(it.n===n) return {a:it.a}; }
-  for(var k=0;k<USER.length;k++) if(USER[k] && USER[k].n===n) return {a:USER[k].a || "Madrid", lat:USER[k].lat, lng:USER[k].lng};
+  for(var i=0;i<DATA.length;i++) for(var j=0;j<DATA[i].items.length;j++){ var it = DATA[i].items[j]; if(it.n===n){ var g = GEO[n]; return g ? {a:it.a, lat:g[0], lng:g[1], approx:!!g[2]} : {a:it.a}; } }
+  for(var k=0;k<USER.length;k++) if(USER[k] && USER[k].n===n){ var u = USER[k]; return {a:u.a || "Madrid", lat:u.lat===""?null:u.lat, lng:u.lng===""?null:u.lng, approx:!!u.approx}; }
   return null;
 }
 function mapsFor(n, p){ return p && p.lat!=null && p.lat!=="" ? "https://www.google.com/maps/search/?api=1&query="+p.lat+","+p.lng : maps(n); }
@@ -200,7 +232,11 @@ function renderCloud(){
     '<p class="msg" aria-live="polite">'+(c.status==="err" ? esc(txt) : "")+'</p></section>';
 }
 function isLocal(it){ return String(it.id).indexOf("local-")===0; }
-function itemData(it){ return {d:it.d, t:it.t || "", kind:it.kind, title:it.title, place:it.place || "", link:it.link || "", note:it.note || ""}; }
+function itemData(it){
+  var o = {d:it.d, t:it.t || "", kind:it.kind, title:it.title, place:it.place || "", link:it.link || "", note:it.note || ""};
+  if(it.lat!=null && it.lng!=null){ o.lat = it.lat; o.lng = it.lng; if(it.approx) o.approx = true; }
+  return o;
+}
 function cloudSave(it){
   if(!CLOUD.pass || !CLOUD.planReady) return Promise.resolve();
   setCloud("busy");
@@ -271,6 +307,11 @@ function rowsFor(d){
   rows.sort(function(a,b){ return (a.t||"") < (b.t||"") ? -1 : (a.t||"") > (b.t||"") ? 1 : (a.kind==="open") - (b.kind==="open"); });
   return rows;
 }
+function locOf(r){
+  var o = r.kind==="plan" ? r.it : r.kind==="meal" ? r.p : null;
+  if(!o || o.lat==null || o.lng==null || !isFinite(+o.lat) || !isFinite(+o.lng)) return null;
+  return {lat:+o.lat, lng:+o.lng, approx:!!o.approx};
+}
 function rowTitle(r){ return r.kind==="meal" ? r.n : r.it.title; }
 
 /* The next timed plan or meal from now on, across the whole trip */
@@ -284,13 +325,14 @@ function findNext(){
   return null;
 }
 
+function numHtml(r){ return r.num ? '<span class="num" data-stop="'+r.d+'|'+r.num+'" title="Show on the map">'+r.num+'</span>' : ''; }
 function rowHtml(r, cls){
   if(r.kind==="open"){
     return '<li class="ev open"><div class="ic">'+ICON.meal+'</div><div class="body"><b>'+(r.meal==="lunch"?"Lunch":"Dinner")+'</b> isn’t booked yet · <a href="./">Find a place in the guide</a></div></li>';
   }
   if(r.kind==="meal"){
     var b = r.b, extra = [b.p ? b.p+" people" : "", b.note || ""].filter(Boolean).join(" · ");
-    return '<li class="ev k-meal'+cls+'"><div class="ic">'+ICON.meal+'</div><div class="body">'+
+    return '<li class="ev k-meal'+cls+'"><div class="ic">'+ICON.meal+numHtml(r)+'</div><div class="body">'+
       '<div class="top"><time>'+esc(b.t)+'</time><span class="kind">'+(mealOf(b.t)==="lunch"?"Lunch":"Dinner")+'</span><span class="booked">✓ Booked</span></div>'+
       '<p class="title">'+esc(r.n)+'</p>'+
       '<p class="meta"><a href="'+mapsFor(r.n, r.p)+'" target="_blank" rel="noopener">'+esc(r.p.a)+'</a></p>'+
@@ -298,7 +340,7 @@ function rowHtml(r, cls){
   }
   var it = r.it, k = ICON[it.kind] ? it.kind : "other";
   if(FORM && FORM.id===it.id) return '<li class="ev k-'+k+'"><div class="ic">'+ICON[k]+'</div>'+formHtml(it)+'</li>';
-  return '<li class="ev k-'+k+cls+'" id="i'+esc(it.id)+'"><div class="ic">'+ICON[k]+'</div><div class="body">'+
+  return '<li class="ev k-'+k+cls+'" id="i'+esc(it.id)+'"><div class="ic">'+ICON[k]+numHtml(r)+'</div><div class="body">'+
     '<div class="top">'+(it.t ? '<time>'+esc(it.t)+'</time>' : '<time class="any">Any time</time>')+'<span class="kind">'+esc(kindLabel(it.kind))+'</span></div>'+
     '<p class="title">'+esc(it.title)+'</p>'+
     (it.place ? '<p class="meta"><a href="'+(isUrl(it.place) ? esc(it.place) : maps(it.place))+'" target="_blank" rel="noopener">'+esc(it.place)+'</a></p>' : '')+
@@ -347,7 +389,9 @@ function render(){
   var today = todayStr(), next = findNext();
   var days = dayList(), plans = 0, total = 0, filled = 0;
   var html = days.map(function(d){
-    var rows = rowsFor(d), isToday = d===today, past = d < today, td = tripDay(d), x = dateOf(d);
+    var rows = rowsFor(d), isToday = d===today, past = d < today, td = tripDay(d), x = dateOf(d), stops = [];
+    rows.forEach(function(r){ var l = locOf(r); if(l){ r.loc = l; r.num = stops.length + 1; stops.push(r); } });
+    STOPS[d] = stops;
     if(td) total += td.meals.length;
     rows.forEach(function(r){ if(r.kind==="plan") plans++; if(r.kind==="meal" && td && td.meals.indexOf(mealOf(r.b.t))>=0) filled++; });
     var items = rows.map(function(r){
@@ -363,6 +407,7 @@ function render(){
       '<div class="dayhead"><div class="date" aria-hidden="true"><span class="dow">'+x.toLocaleDateString("en-US",{weekday:"short"})+'</span><span class="dn">'+x.getDate()+'</span><span class="mo">'+x.toLocaleDateString("en-US",{month:"short"})+'</span></div>'+
         '<div><h2 id="h'+d+'"><span class="sr">'+esc(dayLabel(d))+': </span>'+esc(td && td.title ? td.title : dayLabel(d))+(isToday ? '<span class="pill">Today</span>' : '')+(td ? '' : '<span class="pill soft">Outside the trip</span>')+'</h2>'+
         (td && td.sub ? '<p>'+esc(td.sub)+'</p>' : '')+'</div></div>'+
+      (stops.length ? '<div class="daymap" id="m'+d+'" role="region" aria-label="Map of '+esc(dayLabel(d))+'"></div>' : '')+
       (items ? '<ol class="tl">'+items+'</ol>' : '<p class="msg">Nothing planned yet.</p>')+
       (adding ? formHtml(null) : '<div class="addrow"><button type="button" class="btn" data-add="'+d+'">+ Add to '+esc(dayLabel(d))+'</button></div>')+
     '</section>';
@@ -370,14 +415,55 @@ function render(){
   document.getElementById("stats").innerHTML = statsHtml(plans, filled, total, next);
   document.getElementById("jump").innerHTML = days.map(function(d){ var x = dateOf(d); return '<a class="chip'+(d===today?" on":"")+'" href="#d'+d+'">'+x.toLocaleDateString("en-US",{weekday:"short"})+' <b>'+x.getDate()+'</b></a>'; }).join("");
   var keep = document.activeElement && document.activeElement.closest && document.activeElement.closest("#itemForm");
+  dropMaps();
   document.getElementById("days").innerHTML = html;
+  drawMaps();
   if(FORM && !keep){ var f = document.getElementById("itemForm"); if(f){ f.elements.title.focus(); } }
 }
+
+/* ---------- Day maps (Leaflet + OpenStreetMap tiles, same as the guide) ---------- */
+var STOPS = {}, MAPS = {};
+function darkMode(){ var t = document.documentElement.getAttribute("data-theme"); return t==="dark" || (t!=="light" && matchMedia("(prefers-color-scheme: dark)").matches); }
+function kindClass(r){ return r.kind==="meal" ? "k-meal" : "k-"+(ICON[r.it.kind] ? r.it.kind : "other"); }
+function dropMaps(){ Object.keys(MAPS).forEach(function(d){ MAPS[d].map.remove(); }); MAPS = {}; }
+function drawMaps(){
+  if(!window.L) return;
+  Object.keys(STOPS).forEach(function(d){
+    var el = document.getElementById("m"+d), stops = STOPS[d]; if(!el || !stops.length) return;
+    el.classList.toggle("dark-tiles", darkMode());
+    var map = L.map(el, {scrollWheelZoom:false, zoomControl:true, attributionControl:true});
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(map);
+    map.on("focus", function(){ map.scrollWheelZoom.enable(); });
+    map.on("blur", function(){ map.scrollWheelZoom.disable(); });
+    var pts = stops.map(function(r){ return [r.loc.lat, r.loc.lng]; }), markers = {};
+    if(pts.length > 1) L.polyline(pts, {color:getComputedStyle(document.documentElement).getPropertyValue("--muted").trim() || "#888", weight:2.5, opacity:.7, dashArray:"6 7"}).addTo(map);
+    stops.forEach(function(r){
+      var icon = L.divIcon({className:"", html:'<div class="pin '+kindClass(r)+(r.loc.approx?" approx":"")+'">'+r.num+'</div>', iconSize:[28,28], iconAnchor:[14,14], popupAnchor:[0,-14]});
+      var name = rowTitle(r), where = r.kind==="meal" ? r.p.a : r.it.place;
+      var m = L.marker([r.loc.lat, r.loc.lng], {icon:icon, title:r.num+". "+name, keyboard:true, riseOnHover:true}).addTo(map);
+      m.bindPopup('<div class="pop"><div class="t">'+r.num+'. '+esc(name)+'</div><div class="m">'+esc(r.t || "Any time")+(where ? ' · '+esc(where) : '')+(r.loc.approx ? ' (approximate)' : '')+'</div>'+
+        '<a href="https://www.google.com/maps/dir/?api=1&destination='+r.loc.lat+','+r.loc.lng+'" target="_blank" rel="noopener">Directions ↗</a></div>', {maxWidth:240});
+      markers[r.num] = m;
+    });
+    if(pts.length===1) map.setView(pts[0], 15); else map.fitBounds(pts, {padding:[34,34], maxZoom:16});
+    MAPS[d] = {map:map, markers:markers};
+  });
+}
+/* Tapping a stop number on the timeline shows it on the day's map */
+function showStop(key){
+  var k = key.split("|"), entry = MAPS[k[0]]; if(!entry) return;
+  var m = entry.markers[+k[1]]; if(!m) return;
+  document.getElementById("m"+k[0]).scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block:"center"});
+  entry.map.setView(m.getLatLng(), Math.max(entry.map.getZoom(), 15)); m.openPopup();
+}
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function(){ Object.keys(MAPS).forEach(function(d){ var el = document.getElementById("m"+d); if(el) el.classList.toggle("dark-tiles", darkMode()); }); });
 
 /* ---------- Events ---------- */
 function byId(id){ for(var i=0;i<PLAN.length;i++) if(String(PLAN[i].id)===String(id)) return PLAN[i]; return null; }
 document.addEventListener("click", function(e){
   var t = e.target; if(!t.closest) return;
+  var st = t.closest("[data-stop]");
+  if(st){ showStop(st.getAttribute("data-stop")); return; }
   var add = t.closest("[data-add]");
   if(add){ FORM = {id:null, d:add.getAttribute("data-add")}; render(); return; }
   var ed = t.closest("[data-edit]");
@@ -404,11 +490,14 @@ document.addEventListener("submit", function(e){
   if(link && !isUrl(link)){ msg.textContent = "Links need to start with http:// or https://"; msg.className = "msg err"; f.elements.link.focus(); return; }
   var it = FORM.id!=null ? byId(FORM.id) : null;
   if(!it){ it = {id:"local-"+Date.now()}; PLAN.push(it); }
+  var place = f.elements.place.value.trim(), moved = place !== (it.place || "");
   it.d = f.elements.d.value; it.t = f.elements.t.value; it.kind = f.elements.kind.value; it.title = title;
-  it.place = f.elements.place.value.trim(); it.link = link; it.note = f.elements.note.value.trim();
+  it.place = place; it.link = link; it.note = f.elements.note.value.trim();
+  if(moved || !place){ delete it.lat; delete it.lng; delete it.approx; }
   savePlan(); FORM = null; render();
   var s = document.getElementById("d"+it.d); if(s) s.scrollIntoView({block:"nearest"});
-  cloudSave(it).then(render);
+  (place && it.lat==null ? geocode(place).then(function(g){ if(g){ it.lat = +(+g.lat).toFixed(5); it.lng = +(+g.lon).toFixed(5); savePlan(); render(); } }, function(){}) : Promise.resolve())
+    .then(function(){ return cloudSave(it); }).then(render);
 });
 document.addEventListener("keydown", function(e){ if(e.key==="Escape" && FORM){ FORM = null; render(); } });
 // Bookings made in the guide in another tab show up here straight away
