@@ -228,14 +228,16 @@ var TYPE = {
  "Sala de Despiece":"Tapas & bars","Casa Salesas":"Spanish","Ultramarinos Quintín":"Spanish","El Paraguas":"Spanish",
  "La Máquina":"Spanish","Amazónico":"Latin & international","Noi":"Italian","Allegra":"Italian","Sottosopra":"Italian",
  "Casa Lucio":"Spanish","Ten con Ten":"Spanish","Don Giovanni":"Italian",
- "Puntarena":"Mexican","Bakán":"Mexican","Fisher's":"Mexican","Ticuí":"Mexican"
+ "Puntarena":"Mexican","Bakán":"Mexican","Fisher's":"Mexican","Ticuí":"Mexican",
+ "Fismuler":"Spanish","Casa González":"Tapas & bars","Casa Canito":"Tapas & bars","Casa Dani":"Tapas & bars","La Duquesita":"Cafés"
 };
 var AREA = {
  "Los 33":"Chueca & Salesas","Gran Café Santander":"Chueca & Salesas","Roostiq":"Chueca & Salesas","Casa Salesas":"Chueca & Salesas","Charrúa":"Chueca & Salesas",
  "Caja de Cerillas":"Chamberí","Café Comercial":"Chamberí","Lana":"Chamberí","Taberna La Mina":"Chamberí","Kappo":"Chamberí","Sala de Despiece":"Chamberí","Puntarena":"Chamberí",
  "La Maruca (Velázquez)":"Salamanca","Rocacho":"Salamanca","Ultramarinos Quintín":"Salamanca","El Paraguas":"Salamanca","La Máquina":"Salamanca","Amazónico":"Salamanca","Fisher's":"Salamanca","Sottosopra":"Salamanca","Allegra":"Salamanca","Bakán":"Salamanca","Noi":"Salamanca",
  "Ticuí":"Centro","Ikigai":"Centro","Casa Lucio":"Centro","Ten con Ten":"Salamanca","Don Giovanni":"Retiro & Atocha","Ugo Chan":"Chamartín & North",
- "Castizo":"Not confirmed","Pelotari":"Not confirmed","Raza":"Not confirmed","Jack's Library":"Not confirmed","Sushita":"Not confirmed"
+ "Castizo":"Not confirmed","Pelotari":"Not confirmed","Raza":"Not confirmed","Jack's Library":"Not confirmed","Sushita":"Not confirmed",
+ "Fismuler":"Chamberí","Casa González":"Centro","Casa Canito":"Salamanca","Casa Dani":"Salamanca","La Duquesita":"Chueca & Salesas"
 };
 
 /* ---------- Built-in places + places added from the page (stored in the cloud, cached on this device) ---------- */
@@ -409,6 +411,14 @@ function bookText(b){ return dayLabel(b.d)+" · "+b.t+(b.p?" · "+b.p+" ppl":"")
 
 /* Share bookings + favorites between devices with a link (#trip=...) */
 function encodeState(){ var j = JSON.stringify({b:BOOK,f:FAV}); return btoa(unescape(encodeURIComponent(j))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
+/* Links from the itinerary (#place=Name) open that place's card */
+var JUMP = null;
+function placeFromHash(){
+  var h = location.hash; if(h.indexOf("#place=")!==0) return;
+  try{ JUMP = decodeURIComponent(h.slice(7)); }catch(e){ JUMP = null; }
+  try{ history.replaceState(null, "", location.pathname); }catch(e){}
+}
+function jumpToPlace(){ if(!JUMP || !ITEMS[JUMP]) return; var id = ITEMS[JUMP].id; JUMP = null; goCard(id); }
 function importFromHash(){
   var h = location.hash; if(h.indexOf("#trip=")!==0) return;
   try{
@@ -931,10 +941,11 @@ if("IntersectionObserver" in window){
 
 setPanel(lsGet("madridFiltersOpen")==="1");
 mapKey();
-importFromHash();
+importFromHash(); placeFromHash();
 buildChips(); renderList(); renderFavs(); renderTrip();
 startMap(); MAP.update();
-cloudLoad();
+jumpToPlace();
+cloudLoad().then(jumpToPlace); // places added from the page arrive with the cloud data
 </script>
 </body>
 </html>

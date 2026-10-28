@@ -110,6 +110,23 @@ var DATA = [
  {n:"Ticuí", a:"Cedaceros 6", f:"", lo:70, hi:80, b:"src",
   note:"Sister of Puntarena, Michelin Plate. Neo2 gives €70 average.",
   l:[["Michelin page","https://guide.michelin.com/ca/fr/comunidad-de-madrid/madrid/restaurant/ticui"],["Review & price","https://www.neo2.com/?p=469731"]]}
+]},
+{cat:"From your itinerary", hint:"Places from the trip plan, not from the friend's list", items:[
+ {n:"Fismuler", a:"Calle de Sagasta 29 · Chamberí", f:"", lo:40, hi:60, b:"est", web:"https://fismuler.com/",
+  note:"Friday dinner idea; book ahead. Modern, seasonal Spanish cooking in a retro-industrial room; famous for a huge truffled veal cutlet to share. Michelin lists it €€; En Primeur puts it around $45 pp before wine. Phone +34 918 27 75 81.",
+  l:[["Michelin page","https://guide.michelin.com/sg/en/comunidad-de-madrid/madrid/restaurant/fismuler"],["The Infatuation","https://www.theinfatuation.com/madrid/reviews/fismuler-madrid"]]},
+ {n:"Casa González", a:"Calle del León 12 · Barrio de las Letras", f:"", lo:15, hi:25, b:"est", web:"https://www.casagonzalez.es/",
+  note:"Friday light lunch. Gourmet shop and cheese bar: cheese and charcuterie boards, conservas, a glass of wine. Frommer's lists half raciones at €5–13. No booking needed. Phone +34 914 29 56 18.",
+  l:[["esMadrid","https://www.esmadrid.com/en/shopping/casa-gonzalez"],["Frommer's","https://www.frommers.com/destinations/madrid/restaurants/casa-gonzalez"]]},
+ {n:"Casa Canito", a:"Calle de Recoletos 11 · Recoletos", f:"", lo:23, hi:35, b:"src",
+  note:"Saturday dinner idea. Retro-modern tapas bar, open about 12 hours a day; Time Out puts the average at €23–35. May not take table bookings, so expect a wait or keep a backup nearby.",
+  l:[["Time Out","https://www.timeout.es/madrid/es/bares-y-pubs/casa-canito"],["esMadrid","https://www.esmadrid.com/en/sharing-tapas-madrid"]]},
+ {n:"Casa Dani", a:"Mercado de la Paz, Calle de Ayala 28 · Salamanca", f:"", lo:5, hi:15, b:"src",
+  note:"Famous tortilla española in the Mercado de la Paz: about €4 a slice, weekday menú del día around €15. Closed Sundays and closes around 17:00 on Saturdays; the tortilla can sell out late in the day.",
+  l:[["Time Out","https://www.timeout.es/madrid/es/bares-y-pubs/casa-dani"],["The Infatuation","https://www.theinfatuation.com/madrid/reviews/casa-dani"]]},
+ {n:"La Duquesita", a:"Calle de Fernando VI 2 · Salesas", f:"", lo:5, hi:12, b:"est", web:"https://laduquesita.es/",
+  note:"Pastry stop on the Salesas walk. Historic 1914 pastelería run by Oriol Balaguer, known for croissants; there's a tea salon next door. Hours vary by source, so check before going.",
+  l:[["Time Out","https://www.timeout.com/madrid/shops/la-duquesita"],["esMadrid","https://w3.esmadrid.com/print/pdf/node/3496"]]}
 ]}
 ];
 
@@ -124,7 +141,9 @@ var GEO = {
  "Ultramarinos Quintín":[40.4232,-3.6862],"El Paraguas":[40.4229,-3.6870,1],"La Máquina":[40.4236,-3.6828,1],
  "Amazónico":[40.4234,-3.6851],"Noi":[40.4226,-3.6896],"Sottosopra":[40.4240,-3.6858],
  "Puntarena":[40.4297,-3.7097],"Bakán":[40.4207,-3.6872,1],"Fisher's":[40.4270,-3.6839],"Ticuí":[40.4170,-3.6987],
- "Casa Lucio":[40.4119,-3.7086],"Ten con Ten":[40.4253,-3.6869],"Don Giovanni":[40.4072,-3.6795]
+ "Casa Lucio":[40.4119,-3.7086],"Ten con Ten":[40.4253,-3.6869],"Don Giovanni":[40.4072,-3.6795],
+ "Fismuler":[40.42817,-3.69752],"Casa González":[40.41399,-3.69891],"Casa Canito":[40.4217,-3.6897,1],
+ "Casa Dani":[40.42717,-3.68575],"La Duquesita":[40.42568,-3.69696]
 };
 
 /* Trip days, the meals to plan on each, and each day's headline for the itinerary. */

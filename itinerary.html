@@ -66,6 +66,8 @@ a.stat.next:hover{filter:brightness(1.05)}
 .txt{font-size:14px;margin:8px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;color:color-mix(in srgb,var(--ink) 85%,var(--muted))}
 .acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .acts .btn{height:32px;padding:0 12px}
+.acts .btn.guide{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));color:var(--accent)}
+.acts .btn.guide:hover{border-color:var(--accent)}
 .ev.open .ic{background:var(--bg);color:var(--muted);border-color:var(--bg);box-shadow:inset 0 0 0 2px var(--line)}
 .ev.open .body{background:transparent;border-style:dashed;box-shadow:none;padding-block:11px;color:var(--muted);font-size:14px}
 .ev.open .body b{color:var(--ink);font-weight:600}
@@ -205,6 +207,16 @@ function place(n){
   for(var k=0;k<USER.length;k++) if(USER[k] && USER[k].n===n){ var u = USER[k]; return {a:u.a || "Madrid", lat:u.lat===""?null:u.lat, lng:u.lng===""?null:u.lng, approx:!!u.approx}; }
   return null;
 }
+/* Guide places named in a plan's title or notes, linked to their cards in the guide */
+function guideNames(){ var out = []; DATA.forEach(function(c){ c.items.forEach(function(it){ out.push(it.n); }); }); USER.forEach(function(u){ if(u && u.n && out.indexOf(u.n)<0) out.push(u.n); }); return out; }
+function mentions(text, n){ return new RegExp("(^|[^\\p{L}])"+n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")+"([^\\p{L}]|$)", "iu").test(text || ""); }
+function guideLinks(it){
+  var names = guideNames(), found = [];
+  names.forEach(function(n){ if(mentions(it.title, n)) found.push(n); });
+  names.forEach(function(n){ if(found.indexOf(n)<0 && mentions(it.note, n)) found.push(n); });
+  return found.map(function(n){ return guideBtn(n); }).join("");
+}
+function guideBtn(n){ return '<a class="btn guide" href="./#place='+encodeURIComponent(n)+'">'+esc(n)+' in the guide →</a>'; }
 function mapsFor(n, p){ return p && p.lat!=null && p.lat!=="" ? "https://www.google.com/maps/search/?api=1&query="+p.lat+","+p.lng : maps(n); }
 function mealOf(t){ var h = parseInt((t||"21:00").split(":")[0],10); return h < 17 ? "lunch" : "dinner"; }
 
@@ -336,7 +348,7 @@ function rowHtml(r, cls){
       '<div class="top"><time>'+esc(b.t)+'</time><span class="kind">'+(mealOf(b.t)==="lunch"?"Lunch":"Dinner")+'</span><span class="booked">✓ Booked</span></div>'+
       '<p class="title">'+esc(r.n)+'</p>'+
       '<p class="meta"><a href="'+mapsFor(r.n, r.p)+'" target="_blank" rel="noopener">'+esc(r.p.a)+'</a></p>'+
-      (extra ? '<p class="txt">'+esc(extra)+'</p>' : '')+'</div></li>';
+      (extra ? '<p class="txt">'+esc(extra)+'</p>' : '')+'<div class="acts">'+guideBtn(r.n)+'</div></div></li>';
   }
   var it = r.it, k = ICON[it.kind] ? it.kind : "other";
   if(FORM && FORM.id===it.id) return '<li class="ev k-'+k+'"><div class="ic">'+ICON[k]+'</div>'+formHtml(it)+'</li>';
@@ -345,7 +357,7 @@ function rowHtml(r, cls){
     '<p class="title">'+esc(it.title)+'</p>'+
     (it.place ? '<p class="meta"><a href="'+(isUrl(it.place) ? esc(it.place) : maps(it.place))+'" target="_blank" rel="noopener">'+esc(it.place)+'</a></p>' : '')+
     (it.note ? '<p class="txt">'+esc(it.note)+'</p>' : '')+
-    '<div class="acts">'+(isUrl(it.link) ? '<a class="btn" href="'+esc(it.link)+'" target="_blank" rel="noopener">Open link ↗</a>' : '')+
+    '<div class="acts">'+guideLinks(it)+(isUrl(it.link) ? '<a class="btn" href="'+esc(it.link)+'" target="_blank" rel="noopener">Open link ↗</a>' : '')+
       '<button type="button" class="btn" data-edit="'+esc(it.id)+'">Edit</button></div>'+
     '</div></li>';
 }
