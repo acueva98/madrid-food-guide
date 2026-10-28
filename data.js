@@ -71,7 +71,7 @@ var DATA = [
   note:"No reservations. Reviews mention €50+ per person, and one list says €60. Go early on weekends.",
   l:[["Time Out","https://www.timeout.es/madrid/es/restaurantes/sala-de-despiece"],["World's 50 Best","https://theworlds50best.com/discovery/Establishments/Spain/Madrid/Sala-de-Despiece.html"]]},
  {n:"Casa Salesas", a:"Calle de Fernando VI 6 · Salesas", f:"Vibe", lo:35, hi:60, b:"src",
-  note:"Stylish Mediterranean bistro open from breakfast to late, with a cocktail bar and DJ later at night. OpenTable puts it at €31–50 and Vozpópuli at €35–60 depending on dishes and cocktails. Weekend tables go fast: book on OpenTable. Phone +34 910 054 848.",
+  note:"Stylish Mediterranean bistro open from breakfast to late, with a cocktail bar and DJ later at night. OpenTable puts it at €31–50 and Vozpópuli at €35–60 depending on dishes and cocktails. Booked: Friday at 19:30 for 2 (OpenTable). Phone +34 910 054 848.",
   l:[["Book on OpenTable","https://www.opentable.ca/r/casa-salesas-madrid"],["The Infatuation","https://www.theinfatuation.com/madrid/reviews/casa-salesas"],["Time Out","https://www.timeout.es/madrid/es/restaurantes/casa-salesas"]]},
  {n:"Ten con Ten", a:"Ayala 6 · Salamanca", f:"", lo:50, hi:100, b:"src",
   note:"Stylish see-and-be-seen Spanish spot with a long wine list. Known for the Pitu empanada, tuna tacos, artichoke lasagna and apple tart. El Independiente puts a modest meal at €50–100; it goes well past that with big wines. Open daily 1 pm to midnight.",
@@ -114,10 +114,10 @@ var DATA = [
 ]},
 {cat:"From your itinerary", hint:"Places from the trip plan, not from the friend's list", items:[
  {n:"Fismuler", a:"Calle de Sagasta 29 · Chamberí", f:"", lo:40, hi:60, b:"est", web:"https://fismuler.com/",
-  note:"Friday lunch (dinner was full online). Modern, seasonal Spanish cooking in a retro-industrial room; famous for a huge truffled veal cutlet to share. Michelin lists it €€; En Primeur puts it around $45 pp before wine. Phone +34 918 27 75 81.",
+  note:"Booked: Friday lunch at 13:30 for 2 (the table has to be free by 15:00). Modern, seasonal Spanish cooking in a retro-industrial room; famous for a huge truffled veal cutlet to share. Michelin lists it €€; En Primeur puts it around $45 pp before wine. Phone +34 918 27 75 81.",
   l:[["Michelin page","https://guide.michelin.com/sg/en/comunidad-de-madrid/madrid/restaurant/fismuler"],["The Infatuation","https://www.theinfatuation.com/madrid/reviews/fismuler-madrid"]]},
  {n:"Casa González", a:"Calle del León 12 · Barrio de las Letras", f:"", lo:15, hi:25, b:"est", web:"https://www.casagonzalez.es/",
-  note:"Friday pre-dinner wine after Reina Sofía. Gourmet shop and cheese bar: cheese and charcuterie boards, conservas, a glass of wine. Frommer's lists half raciones at €5–13. No booking needed. Phone +34 914 29 56 18.",
+  note:"Optional stop if you are in Barrio de las Letras (it no longer fits Friday). Gourmet shop and cheese bar: cheese and charcuterie boards, conservas, a glass of wine. Frommer's lists half raciones at €5–13. No booking needed. Phone +34 914 29 56 18.",
   l:[["esMadrid","https://www.esmadrid.com/en/shopping/casa-gonzalez"],["Frommer's","https://www.frommers.com/destinations/madrid/restaurants/casa-gonzalez"]]},
  {n:"Casa Canito", a:"Calle de Recoletos 11 · Recoletos", f:"", lo:23, hi:35, b:"src",
   note:"Saturday dinner idea. Retro-modern tapas bar, open about 12 hours a day; Time Out puts the average at €23–35. May not take table bookings, so expect a wait or keep a backup nearby.",
@@ -150,7 +150,7 @@ var GEO = {
 /* Trip days, the meals to plan on each, and each day's headline for the itinerary. */
 var TRIP = [
   {d:"2026-10-29", l:"Thu Oct 29", meals:["lunch","dinner"], title:"Arrival day", sub:"Salamanca and an easy first evening"},
-  {d:"2026-10-30", l:"Fri Oct 30", meals:["lunch","dinner"], title:"Art and matcha", sub:"Thyssen, Fismuler lunch, Reina Sofía and dinner in Salesas"},
+  {d:"2026-10-30", l:"Fri Oct 30", meals:["lunch","dinner"], title:"Art and matcha", sub:"Thyssen, Fismuler, matcha, Reina Sofía, then dinner at Casa Salesas"},
   {d:"2026-10-31", l:"Sat Oct 31", meals:["lunch","dinner"], title:"Match day", sub:"La Latina, Retiro and Salesas, then Betis with a Betico"},
   {d:"2026-11-01", l:"Sun Nov 1",  meals:["lunch"], title:"Easy morning", sub:"A last walk, then the 15:30 flight"}
 ];
