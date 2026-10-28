@@ -437,13 +437,18 @@ function drawMaps(){
     map.on("blur", function(){ map.scrollWheelZoom.disable(); });
     var pts = stops.map(function(r){ return [r.loc.lat, r.loc.lng]; }), markers = {};
     if(pts.length > 1) L.polyline(pts, {color:getComputedStyle(document.documentElement).getPropertyValue("--muted").trim() || "#888", weight:2.5, opacity:.7, dashArray:"6 7"}).addTo(map);
-    stops.forEach(function(r){
-      var icon = L.divIcon({className:"", html:'<div class="pin '+kindClass(r)+(r.loc.approx?" approx":"")+'">'+r.num+'</div>', iconSize:[28,28], iconAnchor:[14,14], popupAnchor:[0,-14]});
-      var name = rowTitle(r), where = r.kind==="meal" ? r.p.a : r.it.place;
-      var m = L.marker([r.loc.lat, r.loc.lng], {icon:icon, title:r.num+". "+name, keyboard:true, riseOnHover:true}).addTo(map);
-      m.bindPopup('<div class="pop"><div class="t">'+r.num+'. '+esc(name)+'</div><div class="m">'+esc(r.t || "Any time")+(where ? ' · '+esc(where) : '')+(r.loc.approx ? ' (approximate)' : '')+'</div>'+
-        '<a href="https://www.google.com/maps/dir/?api=1&destination='+r.loc.lat+','+r.loc.lng+'" target="_blank" rel="noopener">Directions ↗</a></div>', {maxWidth:240});
-      markers[r.num] = m;
+    // Stops at the same spot (e.g. back to the hotel) share one pin labelled "1·4"
+    var groups = [], byKey = {};
+    stops.forEach(function(r){ var k = r.loc.lat.toFixed(4)+","+r.loc.lng.toFixed(4); if(!byKey[k]){ byKey[k] = []; groups.push(byKey[k]); } byKey[k].push(r); });
+    groups.forEach(function(g){
+      var r0 = g[0], label = g.map(function(r){ return r.num; }).join("·"), w = 28 + (g.length-1)*14;
+      var icon = L.divIcon({className:"", html:'<div class="pin '+kindClass(r0)+(r0.loc.approx?" approx":"")+'" style="width:'+w+'px;border-radius:14px">'+label+'</div>', iconSize:[w,28], iconAnchor:[w/2,14], popupAnchor:[0,-14]});
+      var where = r0.kind==="meal" ? r0.p.a : r0.it.place;
+      var m = L.marker([r0.loc.lat, r0.loc.lng], {icon:icon, title:g.map(function(r){ return r.num+". "+rowTitle(r); }).join(", "), keyboard:true, riseOnHover:true}).addTo(map);
+      m.bindPopup('<div class="pop">'+g.map(function(r){ return '<div class="t">'+r.num+'. '+esc(rowTitle(r))+'</div><div class="m">'+esc(r.t || "Any time")+'</div>'; }).join("")+
+        '<div class="m">'+esc(where || "")+(r0.loc.approx ? ' (approximate)' : '')+'</div>'+
+        '<a href="https://www.google.com/maps/dir/?api=1&destination='+r0.loc.lat+','+r0.loc.lng+'" target="_blank" rel="noopener">Directions ↗</a></div>', {maxWidth:240});
+      g.forEach(function(r){ markers[r.num] = m; });
     });
     if(pts.length===1) map.setView(pts[0], 15); else map.fitBounds(pts, {padding:[34,34], maxZoom:16});
     MAPS[d] = {map:map, markers:markers};
