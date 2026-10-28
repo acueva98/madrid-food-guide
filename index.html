@@ -159,7 +159,7 @@ h2{font:600 24px/1.15 var(--serif);letter-spacing:-.01em;color:var(--ink);margin
 <body>
 <header class="topbar"><div class="topin">
   <a class="brand" href="./"><span class="mark" aria-hidden="true"></span>Madrid <small>Oct 29 – Nov 1</small></a>
-  <nav class="tabs" aria-label="Sections"><a href="./" aria-current="page">Restaurants</a><a href="itinerary.html">Itinerary</a></nav>
+  <nav class="tabs" aria-label="Sections"><a href="./" aria-current="page">Restaurants</a><a href="itinerary">Itinerary</a></nav>
 </div></header>
 <div class="wrap">
   <div class="hero">
@@ -447,7 +447,7 @@ function renderTrip(){
   }).join("");
   var favTodo = Object.keys(FAV).filter(function(n){ return FAV[n] && ITEMS[n] && !BOOK[n]; });
   var h = '<div class="triphead"><div><h2>Your trip · Thu Oct 29 – Sun Nov 1</h2>'+
-    '<div class="sum"><b>'+filled+' of '+total+'</b> meals booked · '+(total-filled)+' still open · <a href="itinerary.html">Full itinerary →</a></div></div>'+
+    '<div class="sum"><b>'+filled+' of '+total+'</b> meals booked · '+(total-filled)+' still open · <a href="itinerary">Full itinerary →</a></div></div>'+
     '<div class="tripact">'+syncHtml()+(CLOUD.pass ? '<button type="button" class="linkbtn" id="bLock">Lock this device</button>' :
       '<form id="unlock" class="unlock"><input id="passIn" type="password" autocomplete="current-password" placeholder="Trip passcode" aria-label="Trip passcode"><button type="submit" class="btn">Unlock & sync</button></form>')+'</div></div>'+
     '<div class="days">'+days+'</div>';
