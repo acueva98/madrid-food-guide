@@ -127,7 +127,10 @@ var DATA = [
   l:[["Time Out","https://www.timeout.es/madrid/es/bares-y-pubs/casa-dani"],["The Infatuation","https://www.theinfatuation.com/madrid/reviews/casa-dani"]]},
  {n:"La Duquesita", a:"Calle de Fernando VI 2 · Salesas", f:"", lo:5, hi:12, b:"est", web:"https://laduquesita.es/",
   note:"Pastry stop on the Salesas walk. Historic 1914 pastelería run by Oriol Balaguer, known for croissants; there's a tea salon next door. Hours vary by source, so check before going.",
-  l:[["Time Out","https://www.timeout.com/madrid/shops/la-duquesita"],["esMadrid","https://w3.esmadrid.com/print/pdf/node/3496"]]}
+  l:[["Time Out","https://www.timeout.com/madrid/shops/la-duquesita"],["esMadrid","https://w3.esmadrid.com/print/pdf/node/3496"]]},
+ {n:"Álex Cordobés", a:"Calle de Velázquez 60 · Salamanca", f:"", lo:5, hi:25, b:"est", web:"https://alexcordobes.es/",
+  note:"Go early: the cheesecakes sell out by mid-afternoon. Takeaway cheesecake bakery with no tables; eight flavours (traditional, pistachio, Lotus, dulce de leche and more), sold as single portions or whole cakes for 3, 8 or 13. Open Tue–Sat 10:00–21:00, Sun and holidays 10:00–14:00, closed Mondays.",
+  l:[["esMadrid","https://www.esmadrid.com/en/shopping/alex-cordobes"],["Spotted by Locals","https://spottedbylocals.com/madrid/alex-cordobes"]]}
 ]}
 ];
 
@@ -144,7 +147,7 @@ var GEO = {
  "Puntarena":[40.4297,-3.7097],"Bakán":[40.4207,-3.6872,1],"Fisher's":[40.4270,-3.6839],"Ticuí":[40.4170,-3.6987],
  "Casa Lucio":[40.4119,-3.7086],"Ten con Ten":[40.4253,-3.6869],"Don Giovanni":[40.4072,-3.6795],
  "Fismuler":[40.42817,-3.69752],"Casa González":[40.41399,-3.69891],"Casa Canito":[40.4217,-3.6897,1],
- "Casa Dani":[40.42717,-3.68575],"La Duquesita":[40.42568,-3.69696]
+ "Casa Dani":[40.42717,-3.68575],"La Duquesita":[40.42568,-3.69696],"Álex Cordobés":[40.42805,-3.68370]
 };
 
 /* Trip days, the meals to plan on each, and each day's headline for the itinerary. */
