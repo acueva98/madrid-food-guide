@@ -307,7 +307,12 @@ function dayList(){
 /* Everything on one day as sortable rows: plans, booked meals and meals still open */
 function rowsFor(d){
   var rows = [];
-  PLAN.forEach(function(it){ if(it.d===d) rows.push({d:d, t:it.t || "", kind:"plan", it:it}); });
+  // A plan naming a restaurant that is booked for the same day gives way to the booked meal
+  var bookedHere = Object.keys(BOOK).filter(function(n){ return BOOK[n] && BOOK[n].d===d && place(n); });
+  PLAN.forEach(function(it){
+    if(it.d!==d || bookedHere.some(function(n){ return mentions(it.title, n); })) return;
+    rows.push({d:d, t:it.t || "", kind:"plan", it:it});
+  });
   var booked = {};
   Object.keys(BOOK).forEach(function(n){
     var b = BOOK[n], p = place(n); if(!b || b.d!==d || !p) return;

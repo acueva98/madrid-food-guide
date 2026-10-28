@@ -70,8 +70,9 @@ var DATA = [
  {n:"Sala de Despiece", a:"Ponzano 11 · Chamberí", f:"Vibe", lo:50, hi:70, b:"src",
   note:"No reservations. Reviews mention €50+ per person, and one list says €60. Go early on weekends.",
   l:[["Time Out","https://www.timeout.es/madrid/es/restaurantes/sala-de-despiece"],["World's 50 Best","https://theworlds50best.com/discovery/Establishments/Spain/Madrid/Sala-de-Despiece.html"]]},
- {n:"Casa Salesas", a:"Las Salesas", f:"Vibe", lo:null, hi:null, b:"none",
-  note:"I couldn't verify the price. Check the Maps result.", l:[]},
+ {n:"Casa Salesas", a:"Calle de Fernando VI 6 · Salesas", f:"Vibe", lo:35, hi:60, b:"src",
+  note:"Stylish Mediterranean bistro open from breakfast to late, with a cocktail bar and DJ later at night. OpenTable puts it at €31–50 and Vozpópuli at €35–60 depending on dishes and cocktails. Weekend tables go fast: book on OpenTable. Phone +34 910 054 848.",
+  l:[["Book on OpenTable","https://www.opentable.ca/r/casa-salesas-madrid"],["The Infatuation","https://www.theinfatuation.com/madrid/reviews/casa-salesas"],["Time Out","https://www.timeout.es/madrid/es/restaurantes/casa-salesas"]]},
  {n:"Ten con Ten", a:"Ayala 6 · Salamanca", f:"", lo:50, hi:100, b:"src",
   note:"Stylish see-and-be-seen Spanish spot with a long wine list. Known for the Pitu empanada, tuna tacos, artichoke lasagna and apple tart. El Independiente puts a modest meal at €50–100; it goes well past that with big wines. Open daily 1 pm to midnight.",
   l:[["Time Out","https://www.timeout.com/madrid/restaurants-and-cafes/ten-con-ten"],["Price breakdown","https://www.elindependiente.com/espana/2025/05/21/precio-restaurante-jeff-bezos-madrid/"]]}
@@ -113,10 +114,10 @@ var DATA = [
 ]},
 {cat:"From your itinerary", hint:"Places from the trip plan, not from the friend's list", items:[
  {n:"Fismuler", a:"Calle de Sagasta 29 · Chamberí", f:"", lo:40, hi:60, b:"est", web:"https://fismuler.com/",
-  note:"Friday dinner idea; book ahead. Modern, seasonal Spanish cooking in a retro-industrial room; famous for a huge truffled veal cutlet to share. Michelin lists it €€; En Primeur puts it around $45 pp before wine. Phone +34 918 27 75 81.",
+  note:"Friday lunch (dinner was full online). Modern, seasonal Spanish cooking in a retro-industrial room; famous for a huge truffled veal cutlet to share. Michelin lists it €€; En Primeur puts it around $45 pp before wine. Phone +34 918 27 75 81.",
   l:[["Michelin page","https://guide.michelin.com/sg/en/comunidad-de-madrid/madrid/restaurant/fismuler"],["The Infatuation","https://www.theinfatuation.com/madrid/reviews/fismuler-madrid"]]},
  {n:"Casa González", a:"Calle del León 12 · Barrio de las Letras", f:"", lo:15, hi:25, b:"est", web:"https://www.casagonzalez.es/",
-  note:"Friday light lunch. Gourmet shop and cheese bar: cheese and charcuterie boards, conservas, a glass of wine. Frommer's lists half raciones at €5–13. No booking needed. Phone +34 914 29 56 18.",
+  note:"Friday pre-dinner wine after Reina Sofía. Gourmet shop and cheese bar: cheese and charcuterie boards, conservas, a glass of wine. Frommer's lists half raciones at €5–13. No booking needed. Phone +34 914 29 56 18.",
   l:[["esMadrid","https://www.esmadrid.com/en/shopping/casa-gonzalez"],["Frommer's","https://www.frommers.com/destinations/madrid/restaurants/casa-gonzalez"]]},
  {n:"Casa Canito", a:"Calle de Recoletos 11 · Recoletos", f:"", lo:23, hi:35, b:"src",
   note:"Saturday dinner idea. Retro-modern tapas bar, open about 12 hours a day; Time Out puts the average at €23–35. May not take table bookings, so expect a wait or keep a backup nearby.",
@@ -137,7 +138,7 @@ var GEO = {
  "Gran Café Santander":[40.4268,-3.6965],"Café Comercial":[40.4290,-3.7024],"Lana":[40.4436,-3.7016],
  "Charrúa":[40.4226,-3.6947],"Rocacho":[40.4302,-3.6777],"Taberna La Mina":[40.4335,-3.7020],
  "Roostiq":[40.4229,-3.6958],"Kappo":[40.4394,-3.6930],"Ikigai":[40.4226,-3.7104],
- "Sala de Despiece":[40.4388,-3.7008],"Casa Salesas":[40.4240,-3.6940,1],
+ "Sala de Despiece":[40.4388,-3.7008],"Casa Salesas":[40.42523,-3.69631],
  "Ultramarinos Quintín":[40.4232,-3.6862],"El Paraguas":[40.4229,-3.6870,1],"La Máquina":[40.4236,-3.6828,1],
  "Amazónico":[40.4234,-3.6851],"Noi":[40.4226,-3.6896],"Sottosopra":[40.4240,-3.6858],
  "Puntarena":[40.4297,-3.7097],"Bakán":[40.4207,-3.6872,1],"Fisher's":[40.4270,-3.6839],"Ticuí":[40.4170,-3.6987],
@@ -149,7 +150,7 @@ var GEO = {
 /* Trip days, the meals to plan on each, and each day's headline for the itinerary. */
 var TRIP = [
   {d:"2026-10-29", l:"Thu Oct 29", meals:["lunch","dinner"], title:"Arrival day", sub:"Salamanca and an easy first evening"},
-  {d:"2026-10-30", l:"Fri Oct 30", meals:["lunch","dinner"], title:"Art and matcha", sub:"Thyssen, Barrio de las Letras and Reina Sofía"},
+  {d:"2026-10-30", l:"Fri Oct 30", meals:["lunch","dinner"], title:"Art and matcha", sub:"Thyssen, Fismuler lunch, Reina Sofía and dinner in Salesas"},
   {d:"2026-10-31", l:"Sat Oct 31", meals:["lunch","dinner"], title:"Match day", sub:"La Latina, Retiro and Salesas, then Betis with a Betico"},
   {d:"2026-11-01", l:"Sun Nov 1",  meals:["lunch"], title:"Easy morning", sub:"A last walk, then the 15:30 flight"}
 ];
