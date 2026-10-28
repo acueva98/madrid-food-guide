@@ -152,7 +152,7 @@ var GEO = {
 
 /* Trip days, the meals to plan on each, and each day's headline for the itinerary. */
 var TRIP = [
-  {d:"2026-10-29", l:"Thu Oct 29", meals:["lunch","dinner"], title:"Arrival day", sub:"Salamanca and an easy first evening"},
+  {d:"2026-10-29", l:"Thu Oct 29", meals:["lunch","dinner"], title:"Arrival day", sub:"Salamanca and cheesecake, Chamberí to Malasaña, then sunset at Debod"},
   {d:"2026-10-30", l:"Fri Oct 30", meals:["lunch","dinner"], title:"Art and matcha", sub:"Thyssen, Fismuler, matcha, Reina Sofía, then dinner at Casa Salesas"},
   {d:"2026-10-31", l:"Sat Oct 31", meals:["lunch","dinner"], title:"Match day", sub:"La Latina, Retiro and Salesas, then Betis with a Betico"},
   {d:"2026-11-01", l:"Sun Nov 1",  meals:["lunch"], title:"Easy morning", sub:"A last walk, then the 15:30 flight"}
