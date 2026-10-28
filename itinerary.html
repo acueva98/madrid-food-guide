@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Madrid Itinerary</title>
+<meta name="description" content="Day-by-day plan for the Madrid trip: flights, hotel, sights and booked meals in one place.">
+<style>
+/* Layout: one column of days, each a timeline of plans and meals sorted by time. Meals come from the food guide's bookings; everything else is added here. Same palette and controls as index.html. */
+:root{
+  --bg:#faf7f2;--card:#ffffff;--ink:#1f1b16;--muted:#6b6258;--line:#e2d9cb;--chip:#efe7da;--chip-on:#1f1b16;--chip-on-ink:#faf7f2;
+  --fav:#d9542b;--hot:#fbf1ea;
+  --t1:#2e7d4f;--t2:#2b6cb0;--t3:#7b4bb0;--t4:#b8323a;--t0:#8a8178;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#16130f;--card:#201c17;--ink:#f1ebe2;--muted:#a79d90;--line:#373027;--chip:#2a251e;--chip-on:#f1ebe2;--chip-on-ink:#16130f;
+    --fav:#ff8a66;--hot:#2e231c;
+    --t1:#6fcf97;--t2:#7ab3ea;--t3:#c3a0ef;--t4:#f08a96;--t0:#9a9086;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16130f;--card:#201c17;--ink:#f1ebe2;--muted:#a79d90;--line:#373027;--chip:#2a251e;--chip-on:#f1ebe2;--chip-on-ink:#16130f;
+  --fav:#ff8a66;--hot:#2e231c;
+  --t1:#6fcf97;--t2:#7ab3ea;--t3:#c3a0ef;--t4:#f08a96;--t0:#9a9086;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding-inline:16px;padding-block:20px 48px}
+.back{font-size:13px;color:var(--muted)}
+.back a{color:var(--ink)}
+h1{font-size:30px;margin:6px 0 0;letter-spacing:-.02em;text-wrap:balance}
+.sub{color:var(--muted);margin:2px 0 14px;font-size:14px;font-variant-numeric:tabular-nums}
+.sub b{color:var(--ink)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:34px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-family:inherit;font-weight:500;font-size:13px;line-height:1;text-decoration:none;white-space:nowrap;cursor:pointer}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--chip-on);color:var(--chip-on-ink);border-color:var(--chip-on)}
+.linkbtn{font:inherit;font-size:13px;border:0;background:none;color:var(--ink);text-decoration:underline;cursor:pointer;padding:4px}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--fav);outline-offset:2px}
+
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-block:10px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.toolbar .end{margin-left:auto;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.sync{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:var(--tc,var(--t0))}
+.unlock{display:flex;gap:6px}
+.unlock input{height:34px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;font-size:13px;width:170px}
+.jump{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;height:32px;padding:0 12px;border:1px solid var(--line);border-radius:999px;color:var(--ink);font-size:13px;text-decoration:none}
+.chip.today{background:var(--chip-on);color:var(--chip-on-ink);border-color:var(--chip-on)}
+
+/* Days and timeline */
+.day{margin-top:26px;scroll-margin-top:12px}
+.dayhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px}
+.day h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0}
+.day.today h2{color:var(--fav)}
+.day.today h2::after{content:" · Today"}
+.day .note{font-size:12px;color:var(--muted)}
+.tl{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.ev{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--tc);border-radius:12px;padding:12px 14px}
+.ev time{font-weight:650;font-variant-numeric:tabular-nums;font-size:15px}
+.ev time.any{font-weight:500;font-size:12px;color:var(--muted);padding-top:2px}
+.ev .kind{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--tc);font-weight:650}
+.ev .title{font-size:17px;font-weight:650;margin:0;overflow-wrap:anywhere}
+.ev .meta{font-size:13px;color:var(--muted);margin:2px 0 0;overflow-wrap:anywhere}
+.ev .meta a{color:var(--muted)}
+.ev .txt{font-size:13px;margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.ev .acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.ev.open{border-style:dashed;border-left-width:1px;background:transparent;color:var(--muted);padding-block:10px}
+.ev.open time{font-weight:500;font-size:13px;text-transform:uppercase;letter-spacing:.06em}
+.ev.open a{color:var(--ink)}
+.ev.past{opacity:.55}
+.ev.next{box-shadow:0 0 0 2px var(--fav)}
+.ev.next .kind::after{content:" · Up next";color:var(--fav)}
+.addrow{margin-top:8px}
+.empty{color:var(--muted);font-size:14px;padding:6px 0}
+
+/* Kind colours (meals use their price tier, like the guide) */
+.k-flight{--tc:var(--t2)}.k-transfer{--tc:var(--t2)}.k-stay{--tc:var(--t3)}.k-sight{--tc:var(--t1)}.k-food{--tc:var(--t4)}.k-event{--tc:var(--fav)}.k-other{--tc:var(--t0)}
+.tier1{--tc:var(--t1)}.tier2{--tc:var(--t2)}.tier3{--tc:var(--t3)}.tier4{--tc:var(--t4)}.tier0{--tc:var(--t0)}
+.ev.meal{--tc:var(--t4)}
+
+/* Add / edit form */
+.itemform{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:8px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.itemform h3{grid-column:1/-1;margin:0;font-size:17px;letter-spacing:-.01em}
+.itemform .full{grid-column:1/-1}
+.itemform label{display:grid;gap:3px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.itemform input,.itemform select,.itemform textarea{min-height:34px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;font-size:14px;text-transform:none;letter-spacing:0;width:100%}
+.itemform textarea{min-height:64px;resize:vertical}
+.itemform .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.msg{font-size:13px;color:var(--muted)}
+.msg.err{color:var(--t4)}
+footer{font-size:12px;color:var(--muted);margin-top:28px}
+
+@media (max-width:560px){
+  .itemform{grid-template-columns:minmax(0,1fr)}
+  .ev{grid-template-columns:52px minmax(0,1fr);gap:10px}
+  .toolbar .end{margin-left:0}
+}
+@media print{
+  .toolbar,.acts,.addrow,.back,.itemform{display:none!important}
+  .ev{break-inside:avoid}
+  .ev.past{opacity:1}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="back"><a href="./">← Food guide</a></div>
+  <h1>Madrid itinerary</h1>
+  <p class="sub" id="sum"></p>
+  <div class="toolbar">
+    <nav class="jump" id="jump" aria-label="Jump to a day"></nav>
+    <div class="end" id="cloud"></div>
+  </div>
+  <div id="days"></div>
+  <footer>Meals come from bookings in the food guide; mark a restaurant as booked there and it shows up here. Everything is also kept on this device, so the plan opens without a connection.</footer>
+</div>
+
+<script src="data.js"></script>
+<script>
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+function lsJson(k, d){ try{ return JSON.parse(lsGet(k)||"null") || d; }catch(e){ return d; } }
+function isUrl(s){ return /^https?:\/\/\S+$/i.test(String(s||"")); }
+
+var KINDS = [
+  {k:"flight", l:"Flight"}, {k:"transfer", l:"Train / transfer"}, {k:"stay", l:"Hotel"},
+  {k:"sight", l:"Sight"}, {k:"food", l:"Food & drink"}, {k:"event", l:"Event"}, {k:"other", l:"Other"}
+];
+function kindLabel(k){ for(var i=0;i<KINDS.length;i++) if(KINDS[i].k===k) return KINDS[i].l; return "Other"; }
+
+/* Bookings, added places and the trip passcode are shared with the food guide through the same keys. */
+var BOOK = lsJson("madridBookings", {});
+var USER = lsJson("madridPlaces", []);
+var PLAN = lsJson("madridPlan", []);
+function savePlan(){ lsSet("madridPlan", JSON.stringify(PLAN)); }
+
+/* Restaurant lookup for meals: built-in list first, then places added from the guide */
+var TIERS = [[30,"1"],[50,"2"],[80,"3"],[1e9,"4"]];
+function tierOf(lo, hi){ if(lo==null || lo==="") return "0"; var m = (+lo + +(hi==null||hi===""?lo:hi))/2; for(var i=0;i<TIERS.length;i++) if(m<TIERS[i][0]) return TIERS[i][1]; return "4"; }
+function place(n){
+  for(var i=0;i<DATA.length;i++) for(var j=0;j<DATA[i].items.length;j++){ var it = DATA[i].items[j]; if(it.n===n) return {a:it.a, tier:tierOf(it.lo, it.hi)}; }
+  for(var k=0;k<USER.length;k++) if(USER[k] && USER[k].n===n) return {a:USER[k].a || "Madrid", tier:tierOf(USER[k].lo, USER[k].hi), lat:USER[k].lat, lng:USER[k].lng};
+  return null;
+}
+function mapsFor(n, p){ return p && p.lat!=null && p.lat!=="" ? "https://www.google.com/maps/search/?api=1&query="+p.lat+","+p.lng : maps(n); }
+function mealOf(t){ var h = parseInt((t||"21:00").split(":")[0],10); return h < 17 ? "lunch" : "dinner"; }
+
+/* ---------- Cloud sync (Supabase), same passcode-checked functions as the guide ---------- */
+var SB_URL = "https://ijujhjvggzbriooblawt.supabase.co";
+var SB_KEY = "sb_publishable_hQgHx5YJyYfkofty0hz1Xw_a4-kdDSn"; // publishable key: safe in the page
+var CLOUD = {pass: lsGet("madridTripPass") || "", status: "off", msg: "", planReady: true};
+function rpc(fn, args){
+  return fetch(SB_URL+"/rest/v1/rpc/"+fn, {method:"POST", headers:{"apikey":SB_KEY, "Content-Type":"application/json"}, body:JSON.stringify(args)})
+    .then(function(r){ return r.text().then(function(t){ if(!r.ok){ var e = new Error(t); e.status = r.status; throw e; } return t ? JSON.parse(t) : null; }); });
+}
+function setCloud(status, msg){ CLOUD.status = status; CLOUD.msg = msg || ""; renderCloud(); }
+function renderCloud(){
+  var c = CLOUD, dot = {ok:"var(--t1)", busy:"var(--t2)", err:"var(--t4)", off:"var(--t0)"}[c.status] || "var(--t0)";
+  var txt = c.status==="ok" ? "Synced to the cloud" : c.status==="busy" ? "Syncing…" : c.status==="err" ? (c.msg || "Couldn’t reach the cloud. Showing what’s saved on this device.") : "Not synced: this device only";
+  document.getElementById("cloud").innerHTML = '<span class="sync"><span class="dot" style="--tc:'+dot+'"></span>'+esc(txt)+'</span>'+
+    (c.pass ? '<button type="button" class="linkbtn" id="bLock">Lock this device</button>'
+      : '<form id="unlock" class="unlock"><input id="passIn" type="password" autocomplete="current-password" placeholder="Trip passcode" aria-label="Trip passcode"><button type="submit" class="btn">Unlock & sync</button></form>');
+}
+function isLocal(it){ return String(it.id).indexOf("local-")===0; }
+function itemData(it){ return {d:it.d, t:it.t || "", kind:it.kind, title:it.title, place:it.place || "", link:it.link || "", note:it.note || ""}; }
+function cloudSave(it){
+  if(!CLOUD.pass || !CLOUD.planReady) return Promise.resolve();
+  setCloud("busy");
+  return rpc("trip_save_item", {p:CLOUD.pass, iid:isLocal(it) ? null : it.id, idata:itemData(it)}).then(function(id){
+    it.id = id; savePlan(); setCloud("ok");
+  }, cloudFail);
+}
+function cloudRemove(it){
+  if(!CLOUD.pass || !CLOUD.planReady || isLocal(it)) return Promise.resolve();
+  setCloud("busy");
+  return rpc("trip_remove_item", {p:CLOUD.pass, iid:it.id}).then(function(){ setCloud("ok"); }, cloudFail);
+}
+function cloudFail(e){
+  if(e && e.status===404){ CLOUD.planReady = false; setCloud("err", "Itinerary sync isn’t set up yet. Plans are kept on this device."); }
+  else setCloud("err", "Couldn’t save to the cloud. Kept on this device.");
+}
+function cloudLoad(){
+  if(!CLOUD.pass){ setCloud("off"); return; }
+  setCloud("busy");
+  rpc("trip_get", {p:CLOUD.pass}).then(function(data){
+    BOOK = data.bookings || {}; lsSet("madridBookings", JSON.stringify(BOOK));
+    if(data.places){ USER = data.places; lsSet("madridPlaces", JSON.stringify(USER)); }
+    render();
+    return rpc("trip_get_plan", {p:CLOUD.pass}).then(function(items){
+      // Keep plans made on this device before it was unlocked, then upload them
+      var local = PLAN.filter(isLocal);
+      PLAN = (items || []).concat(local); savePlan(); render();
+      var chain = Promise.resolve();
+      local.forEach(function(it){ chain = chain.then(function(){ return cloudSave(it); }); });
+      return chain.then(function(){ if(CLOUD.status!=="err") setCloud("ok"); render(); });
+    }, cloudFail);
+  }, function(e){
+    if(e.status===400 || /passcode/i.test(e.message)){ CLOUD.pass = ""; lsSet("madridTripPass", ""); setCloud("err", "That passcode didn’t work. Try again."); }
+    else setCloud("err");
+  });
+}
+
+/* ---------- Rendering ---------- */
+var FORM = null; // {id: item id or null, d: day} while the add/edit form is open
+
+function pad(n){ return (n<10?"0":"")+n; }
+function todayStr(){ var x = new Date(); return x.getFullYear()+"-"+pad(x.getMonth()+1)+"-"+pad(x.getDate()); }
+function nowTime(){ var x = new Date(); return pad(x.getHours())+":"+pad(x.getMinutes()); }
+function dayLabel(d){ for(var i=0;i<TRIP.length;i++) if(TRIP[i].d===d) return TRIP[i].l; var x = new Date(d+"T12:00:00"); return isNaN(x) ? d : x.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}).replace(",", ""); }
+function tripDay(d){ for(var i=0;i<TRIP.length;i++) if(TRIP[i].d===d) return TRIP[i]; return null; }
+
+function dayList(){
+  var set = {};
+  TRIP.forEach(function(x){ set[x.d] = 1; });
+  PLAN.forEach(function(it){ if(it.d) set[it.d] = 1; });
+  Object.keys(BOOK).forEach(function(n){ if(BOOK[n] && BOOK[n].d && place(n)) set[BOOK[n].d] = 1; });
+  return Object.keys(set).sort();
+}
+
+/* Everything on one day as sortable rows: plans, booked meals and meals still open */
+function rowsFor(d){
+  var rows = [];
+  PLAN.forEach(function(it){ if(it.d===d) rows.push({t:it.t || "", kind:"plan", it:it}); });
+  var booked = {};
+  Object.keys(BOOK).forEach(function(n){
+    var b = BOOK[n], p = place(n); if(!b || b.d!==d || !p) return;
+    booked[mealOf(b.t)] = true;
+    rows.push({t:b.t || "", kind:"meal", n:n, b:b, p:p});
+  });
+  var td = tripDay(d);
+  (td ? td.meals : []).forEach(function(m){ if(!booked[m]) rows.push({t:m==="lunch" ? "14:00" : "21:00", kind:"open", meal:m}); });
+  rows.sort(function(a,b){ return (a.t||"") < (b.t||"") ? -1 : (a.t||"") > (b.t||"") ? 1 : (a.kind==="open") - (b.kind==="open"); });
+  return rows;
+}
+
+function rowHtml(r, cls){
+  if(r.kind==="open"){
+    return '<li class="ev open"><time>'+(r.meal==="lunch"?"Lunch":"Dinner")+'</time><div>Not booked yet · <a href="./">Find a place in the guide</a></div></li>';
+  }
+  if(r.kind==="meal"){
+    var b = r.b, extra = [b.p ? b.p+" people" : "", b.note || ""].filter(Boolean).join(" · ");
+    return '<li class="ev meal tier'+r.p.tier+cls+'"><time>'+esc(b.t)+'</time><div>'+
+      '<div class="kind">'+(mealOf(b.t)==="lunch"?"Lunch":"Dinner")+'</div><p class="title">'+esc(r.n)+'</p>'+
+      '<p class="meta"><a href="'+mapsFor(r.n, r.p)+'" target="_blank" rel="noopener">'+esc(r.p.a)+'</a></p>'+
+      (extra ? '<p class="txt">'+esc(extra)+'</p>' : '')+'</div></li>';
+  }
+  var it = r.it;
+  if(FORM && FORM.id===it.id) return '<li>'+formHtml(it)+'</li>';
+  return '<li class="ev k-'+esc(it.kind || "other")+cls+'">'+(it.t ? '<time>'+esc(it.t)+'</time>' : '<time class="any">Any time</time>')+'<div>'+
+    '<div class="kind">'+esc(kindLabel(it.kind))+'</div><p class="title">'+esc(it.title)+'</p>'+
+    (it.place ? '<p class="meta"><a href="'+(isUrl(it.place) ? esc(it.place) : maps(it.place))+'" target="_blank" rel="noopener">'+esc(it.place)+'</a></p>' : '')+
+    (it.note ? '<p class="txt">'+esc(it.note)+'</p>' : '')+
+    '<div class="acts">'+(isUrl(it.link) ? '<a class="btn" href="'+esc(it.link)+'" target="_blank" rel="noopener">Open link ↗</a>' : '')+
+      '<button type="button" class="btn" data-edit="'+esc(it.id)+'">Edit</button></div>'+
+    '</div></li>';
+}
+
+function formHtml(it){
+  var v = it || {d:FORM.d, t:"", kind:"sight", title:"", place:"", link:"", note:""};
+  function val(x){ return esc(x==null ? "" : x); }
+  var days = dayList(); if(days.indexOf(v.d)<0) days.push(v.d);
+  return '<form class="itemform" id="itemForm" novalidate>'+
+    '<h3>'+(it ? "Edit plan" : "Add to "+esc(dayLabel(v.d)))+'</h3>'+
+    '<label class="full">What *<input name="title" type="text" required maxlength="120" value="'+val(v.title)+'" placeholder="e.g. Prado Museum, IB 6252 to Madrid, Check in at hotel" autocomplete="off"></label>'+
+    '<label>Type<select name="kind">'+KINDS.map(function(k){ return '<option value="'+k.k+'"'+(k.k===v.kind?" selected":"")+'>'+k.l+'</option>'; }).join("")+'</select></label>'+
+    '<label>Day<select name="d">'+days.map(function(d){ return '<option value="'+d+'"'+(d===v.d?" selected":"")+'>'+esc(dayLabel(d))+'</option>'; }).join("")+'</select></label>'+
+    '<label>Time <span>(optional)</span><input name="t" type="time" value="'+val(v.t)+'"></label>'+
+    '<label>Where<input name="place" type="text" maxlength="160" value="'+val(v.place)+'" placeholder="Address or place name"></label>'+
+    '<label class="full">Link<input name="link" type="url" maxlength="500" value="'+val(v.link)+'" placeholder="Tickets, booking or confirmation page"></label>'+
+    '<label class="full">Notes<textarea name="note" maxlength="1000" placeholder="Confirmation number, gate, who has the tickets…">'+val(v.note)+'</textarea></label>'+
+    '<div class="row full"><button type="submit" class="btn primary">'+(it ? "Save" : "Add to itinerary")+'</button>'+
+      (it ? '<button type="button" class="btn" id="fRemove">Remove</button>' : '')+
+      '<button type="button" class="btn" id="fCancel">Cancel</button>'+
+      '<span class="msg" id="fMsg" aria-live="polite"></span></div>'+
+  '</form>';
+}
+
+function render(){
+  var today = todayStr(), now = nowTime(), nextDone = false;
+  var days = dayList(), plans = 0, total = 0, filled = 0;
+  var html = days.map(function(d){
+    var rows = rowsFor(d), isToday = d===today, past = d < today;
+    var td = tripDay(d);
+    if(td) td.meals.forEach(function(m){ total++; });
+    rows.forEach(function(r){ if(r.kind==="plan") plans++; if(r.kind==="meal" && td && td.meals.indexOf(mealOf(r.b.t))>=0) filled++; });
+    var items = rows.map(function(r){
+      var cls = "";
+      if(r.kind!=="open"){
+        if(past || (isToday && r.t && r.t < now)) cls = " past";
+        else if(isToday && !nextDone && r.t){ cls = " next"; nextDone = true; }
+      }
+      return rowHtml(r, cls);
+    }).join("");
+    var adding = FORM && FORM.id==null && FORM.d===d;
+    return '<section class="day'+(isToday?" today":"")+'" id="d'+d+'" aria-labelledby="h'+d+'">'+
+      '<div class="dayhead"><h2 id="h'+d+'">'+esc(dayLabel(d))+'</h2>'+(td ? '' : '<span class="note">Outside the trip dates</span>')+'</div>'+
+      (items ? '<ol class="tl">'+items+'</ol>' : '<p class="empty">Nothing planned yet.</p>')+
+      (adding ? formHtml(null) : '<div class="addrow"><button type="button" class="btn" data-add="'+d+'">+ Add to '+esc(dayLabel(d))+'</button></div>')+
+    '</section>';
+  }).join("");
+  var first = TRIP[0].l, last = TRIP[TRIP.length-1].l;
+  document.getElementById("sum").innerHTML = esc(first)+' – '+esc(last)+' · <b>'+plans+'</b> '+(plans===1?"plan":"plans")+' · <b>'+filled+' of '+total+'</b> meals booked';
+  document.getElementById("jump").innerHTML = days.map(function(d){ return '<a class="chip'+(d===today?" today":"")+'" href="#d'+d+'">'+esc(dayLabel(d))+'</a>'; }).join("");
+  var keep = document.activeElement && document.activeElement.closest && document.activeElement.closest("#itemForm");
+  document.getElementById("days").innerHTML = html;
+  if(FORM && !keep){ var f = document.getElementById("itemForm"); if(f){ f.elements.title.focus(); } }
+}
+
+/* ---------- Events ---------- */
+function byId(id){ for(var i=0;i<PLAN.length;i++) if(String(PLAN[i].id)===String(id)) return PLAN[i]; return null; }
+document.addEventListener("click", function(e){
+  var t = e.target; if(!t.closest) return;
+  var add = t.closest("[data-add]");
+  if(add){ FORM = {id:null, d:add.getAttribute("data-add")}; render(); return; }
+  var ed = t.closest("[data-edit]");
+  if(ed){ var it = byId(ed.getAttribute("data-edit")); if(it){ FORM = {id:it.id, d:it.d}; render(); } return; }
+  if(t.id==="fCancel"){ var d = FORM && FORM.d; FORM = null; render(); var s = document.getElementById("d"+d); if(s) s.scrollIntoView({block:"nearest"}); return; }
+  if(t.id==="fRemove"){
+    var rm = byId(FORM.id); if(!rm) return;
+    if(!confirm("Remove “"+rm.title+"” from the itinerary?")) return;
+    PLAN = PLAN.filter(function(x){ return x!==rm; }); savePlan(); FORM = null; render(); cloudRemove(rm); return;
+  }
+  if(t.id==="bLock"){ CLOUD.pass = ""; lsSet("madridTripPass", ""); setCloud("off"); return; }
+});
+document.addEventListener("submit", function(e){
+  if(e.target.id==="unlock"){
+    e.preventDefault();
+    var p = document.getElementById("passIn").value.trim(); if(!p) return;
+    CLOUD.pass = p; CLOUD.planReady = true; lsSet("madridTripPass", p); cloudLoad(); return;
+  }
+  if(e.target.id!=="itemForm") return;
+  e.preventDefault();
+  var f = e.target, msg = document.getElementById("fMsg");
+  var title = f.elements.title.value.trim(), link = f.elements.link.value.trim();
+  if(!title){ msg.textContent = "Add what it is first."; msg.className = "msg err"; f.elements.title.focus(); return; }
+  if(link && !isUrl(link)){ msg.textContent = "Links need to start with http:// or https://"; msg.className = "msg err"; f.elements.link.focus(); return; }
+  var it = FORM.id!=null ? byId(FORM.id) : null;
+  if(!it){ it = {id:"local-"+Date.now()}; PLAN.push(it); }
+  it.d = f.elements.d.value; it.t = f.elements.t.value; it.kind = f.elements.kind.value; it.title = title;
+  it.place = f.elements.place.value.trim(); it.link = link; it.note = f.elements.note.value.trim();
+  savePlan(); FORM = null; render();
+  var s = document.getElementById("d"+it.d); if(s) s.scrollIntoView({block:"nearest"});
+  cloudSave(it).then(render);
+});
+document.addEventListener("keydown", function(e){ if(e.key==="Escape" && FORM){ FORM = null; render(); } });
+// Bookings made in the guide in another tab show up here straight away
+window.addEventListener("storage", function(e){
+  if(e.key==="madridBookings"){ BOOK = lsJson("madridBookings", {}); render(); }
+  if(e.key==="madridPlaces"){ USER = lsJson("madridPlaces", []); render(); }
+});
+
+renderCloud();
+render();
+var t0 = document.getElementById("d"+todayStr());
+if(t0 && !location.hash) t0.scrollIntoView({block:"start"});
+cloudLoad();
+</script>
+</body>
+</html>
