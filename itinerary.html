@@ -4,121 +4,133 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Madrid Itinerary</title>
-<meta name="description" content="Day-by-day plan for the Madrid trip: flights, hotel, sights and booked meals in one place.">
+<meta name="description" content="Day-by-day plan for the Madrid trip: flights, hotel, sights, games and booked meals in one place.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="theme.css">
 <style>
-/* Layout: one column of days, each a timeline of plans and meals sorted by time. Meals come from the food guide's bookings; everything else is added here. Same palette and controls as index.html. */
-:root{
-  --bg:#faf7f2;--card:#ffffff;--ink:#1f1b16;--muted:#6b6258;--line:#e2d9cb;--chip:#efe7da;--chip-on:#1f1b16;--chip-on-ink:#faf7f2;
-  --fav:#d9542b;--hot:#fbf1ea;
-  --t1:#2e7d4f;--t2:#2b6cb0;--t3:#7b4bb0;--t4:#b8323a;--t0:#8a8178;
-  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
-}
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    --bg:#16130f;--card:#201c17;--ink:#f1ebe2;--muted:#a79d90;--line:#373027;--chip:#2a251e;--chip-on:#f1ebe2;--chip-on-ink:#16130f;
-    --fav:#ff8a66;--hot:#2e231c;
-    --t1:#6fcf97;--t2:#7ab3ea;--t3:#c3a0ef;--t4:#f08a96;--t0:#9a9086;
-    color-scheme:dark;
-  }
-}
-:root[data-theme="dark"]{
-  --bg:#16130f;--card:#201c17;--ink:#f1ebe2;--muted:#a79d90;--line:#373027;--chip:#2a251e;--chip-on:#f1ebe2;--chip-on-ink:#16130f;
-  --fav:#ff8a66;--hot:#2e231c;
-  --t1:#6fcf97;--t2:#7ab3ea;--t3:#c3a0ef;--t4:#f08a96;--t0:#9a9086;
-  color-scheme:dark;
-}
-*{box-sizing:border-box}
-[hidden]{display:none!important}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-.wrap{max-width:820px;margin:0 auto;padding-inline:16px;padding-block:20px 48px}
-.back{font-size:13px;color:var(--muted)}
-.back a{color:var(--ink)}
-h1{font-size:30px;margin:6px 0 0;letter-spacing:-.02em;text-wrap:balance}
-.sub{color:var(--muted);margin:2px 0 14px;font-size:14px;font-variant-numeric:tabular-nums}
-.sub b{color:var(--ink)}
+/* Layout: hero with trip stats, a passcode card while locked, day chips, then one section per day: a date block and headline over a timeline of plans and meals sorted by time. Shared look lives in theme.css. */
+.wrap{max-width:860px}
 
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:34px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-family:inherit;font-weight:500;font-size:13px;line-height:1;text-decoration:none;white-space:nowrap;cursor:pointer}
-.btn:hover{border-color:var(--ink)}
-.btn.primary{background:var(--chip-on);color:var(--chip-on-ink);border-color:var(--chip-on)}
-.linkbtn{font:inherit;font-size:13px;border:0;background:none;color:var(--ink);text-decoration:underline;cursor:pointer;padding:4px}
-button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--fav);outline-offset:2px}
+/* Stats under the title */
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:22px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;box-shadow:var(--shadow);min-width:0}
+.stat .k{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.stat .v{font:600 22px/1.2 var(--serif);margin-top:4px;font-variant-numeric:tabular-nums}
+.stat.next{grid-column:span 2;background:var(--accent);border-color:var(--accent);color:var(--accent-ink);text-decoration:none}
+.stat.next .k{color:inherit;opacity:.8}
+.stat.next .v{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat.next .w{font-size:13px;opacity:.9;margin-top:2px}
+a.stat.next:hover{filter:brightness(1.05)}
 
-.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-block:10px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.toolbar .end{margin-left:auto;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.sync{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
-.dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:var(--tc,var(--t0))}
-.unlock{display:flex;gap:6px}
-.unlock input{height:34px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;font-size:13px;width:170px}
+/* Passcode card while this device is locked */
+.lock{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px 20px;align-items:center;padding:20px;margin-top:18px;background:linear-gradient(135deg,var(--accent-soft),var(--card) 65%)}
+.lock h2{font:600 22px/1.2 var(--serif);margin:0}
+.lock p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.lock .unlock input{background:var(--card);width:200px}
+.lock .msg{grid-column:1/-1;margin:0;color:var(--t4);font-size:13px}
+
+.bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:22px;padding-bottom:14px;border-bottom:1px solid var(--line)}
 .jump{display:flex;flex-wrap:wrap;gap:6px}
-.chip{display:inline-flex;align-items:center;height:32px;padding:0 12px;border:1px solid var(--line);border-radius:999px;color:var(--ink);font-size:13px;text-decoration:none}
-.chip.today{background:var(--chip-on);color:var(--chip-on-ink);border-color:var(--chip-on)}
+.jump .chip b{font-weight:700}
+.cloud{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 
-/* Days and timeline */
-.day{margin-top:26px;scroll-margin-top:12px}
-.dayhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px}
-.day h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0}
-.day.today h2{color:var(--fav)}
-.day.today h2::after{content:" · Today"}
-.day .note{font-size:12px;color:var(--muted)}
-.tl{list-style:none;margin:0;padding:0;display:grid;gap:8px}
-.ev{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--tc);border-radius:12px;padding:12px 14px}
-.ev time{font-weight:650;font-variant-numeric:tabular-nums;font-size:15px}
-.ev time.any{font-weight:500;font-size:12px;color:var(--muted);padding-top:2px}
-.ev .kind{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--tc);font-weight:650}
-.ev .title{font-size:17px;font-weight:650;margin:0;overflow-wrap:anywhere}
-.ev .meta{font-size:13px;color:var(--muted);margin:2px 0 0;overflow-wrap:anywhere}
-.ev .meta a{color:var(--muted)}
-.ev .txt{font-size:13px;margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
-.ev .acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.ev.open{border-style:dashed;border-left-width:1px;background:transparent;color:var(--muted);padding-block:10px}
-.ev.open time{font-weight:500;font-size:13px;text-transform:uppercase;letter-spacing:.06em}
-.ev.open a{color:var(--ink)}
-.ev.past{opacity:.55}
-.ev.next{box-shadow:0 0 0 2px var(--fav)}
-.ev.next .kind::after{content:" · Up next";color:var(--fav)}
-.addrow{margin-top:8px}
-.empty{color:var(--muted);font-size:14px;padding:6px 0}
+/* Day sections */
+.day{margin-top:34px;scroll-margin-top:80px}
+.dayhead{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+.date{flex:0 0 auto;width:60px;border-radius:16px;overflow:hidden;text-align:center;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow)}
+.date .dow{display:block;background:var(--ink);color:var(--bg);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:4px 0}
+.date .dn{display:block;font:600 26px/1 var(--serif);padding:8px 0 2px}
+.date .mo{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;padding-bottom:6px}
+.day.today .date .dow{background:var(--accent);color:var(--accent-ink)}
+.dayhead h2{font:600 26px/1.1 var(--serif);letter-spacing:-.015em;margin:0}
+.dayhead p{margin:3px 0 0;color:var(--muted);font-size:14px}
+.pill{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;vertical-align:middle;margin-left:8px}
+.pill.soft{background:var(--chip);color:var(--muted)}
 
-/* Kind colours (meals use their price tier, like the guide) */
-.k-flight{--tc:var(--t2)}.k-transfer{--tc:var(--t2)}.k-stay{--tc:var(--t3)}.k-sight{--tc:var(--t1)}.k-food{--tc:var(--t4)}.k-event{--tc:var(--fav)}.k-other{--tc:var(--t0)}
-.tier1{--tc:var(--t1)}.tier2{--tc:var(--t2)}.tier3{--tc:var(--t3)}.tier4{--tc:var(--t4)}.tier0{--tc:var(--t0)}
-.ev.meal{--tc:var(--t4)}
+/* Timeline */
+.tl{list-style:none;margin:0;padding:0;position:relative;display:grid;gap:10px}
+.tl::before{content:"";position:absolute;left:21px;top:18px;bottom:18px;width:2px;background:var(--line)}
+.ev{position:relative;display:grid;grid-template-columns:44px minmax(0,1fr);gap:14px;align-items:start}
+.ic{position:relative;z-index:1;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--tc) 16%,var(--card));color:var(--tc);border:3px solid var(--bg)}
+.ic svg{width:20px;height:20px}
+.body{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);min-width:0;transition:box-shadow .15s}
+.top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.top time{font-weight:700;font-variant-numeric:tabular-nums;font-size:14px}
+.top time.any{font-weight:600;color:var(--muted)}
+.kind{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--tc);font-weight:700}
+.title{font:600 19px/1.25 var(--serif);letter-spacing:-.005em;margin:4px 0 0;overflow-wrap:anywhere}
+.meta{font-size:13px;color:var(--muted);margin:3px 0 0;overflow-wrap:anywhere}
+.meta a{color:var(--muted);text-underline-offset:3px}
+.txt{font-size:14px;margin:8px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;color:color-mix(in srgb,var(--ink) 85%,var(--muted))}
+.acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.acts .btn{height:32px;padding:0 12px}
+.ev.open .ic{background:var(--bg);color:var(--muted);border-color:var(--bg);box-shadow:inset 0 0 0 2px var(--line)}
+.ev.open .body{background:transparent;border-style:dashed;box-shadow:none;padding-block:11px;color:var(--muted);font-size:14px}
+.ev.open .body b{color:var(--ink);font-weight:600}
+.ev.open a{color:var(--accent);font-weight:600;text-decoration:none}
+.ev.open a:hover{text-decoration:underline}
+.ev.past .body,.ev.past .ic{opacity:.5}
+.ev.next .body{box-shadow:0 0 0 2px var(--accent),var(--shadow)}
+.ev.next .ic{background:var(--accent);color:var(--accent-ink)}
+.addrow{margin:12px 0 0 58px}
+.addrow .btn{border-style:dashed;background:transparent;color:var(--muted)}
+.addrow .btn:hover{color:var(--ink)}
+
+/* Kind colours */
+.k-flight,.k-transfer{--tc:var(--t2)}.k-stay{--tc:var(--t3)}.k-sight{--tc:var(--t1)}.k-food,.k-meal{--tc:var(--accent)}.k-game{--tc:var(--gold)}.k-event{--tc:var(--fav)}.k-other{--tc:var(--t0)}
+.booked{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 8px;border-radius:999px;background:color-mix(in srgb,var(--t1) 15%,var(--card));color:var(--t1);font-size:11px;font-weight:700}
 
 /* Add / edit form */
-.itemform{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:8px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
-.itemform h3{grid-column:1/-1;margin:0;font-size:17px;letter-spacing:-.01em}
+.itemform{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0 0 58px;padding:18px}
+.itemform h3{grid-column:1/-1;margin:0;font:600 21px/1.2 var(--serif)}
 .itemform .full{grid-column:1/-1}
-.itemform label{display:grid;gap:3px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
-.itemform input,.itemform select,.itemform textarea{min-height:34px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;font-size:14px;text-transform:none;letter-spacing:0;width:100%}
-.itemform textarea{min-height:64px;resize:vertical}
-.itemform .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.itemform label{display:grid;gap:4px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.itemform input,.itemform select,.itemform textarea{min-height:40px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);font:inherit;font-size:14px;text-transform:none;letter-spacing:0;width:100%}
+.itemform textarea{min-height:76px;resize:vertical}
+.itemform .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ev .itemform{margin:0}
 .msg{font-size:13px;color:var(--muted)}
 .msg.err{color:var(--t4)}
-footer{font-size:12px;color:var(--muted);margin-top:28px}
 
-@media (max-width:560px){
-  .itemform{grid-template-columns:minmax(0,1fr)}
-  .ev{grid-template-columns:52px minmax(0,1fr);gap:10px}
-  .toolbar .end{margin-left:0}
+@media (max-width:640px){
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .lock{grid-template-columns:minmax(0,1fr)}
+  .lock .unlock input{flex:1;width:auto}
+  .itemform{grid-template-columns:minmax(0,1fr);margin-left:0}
+  .ev{grid-template-columns:36px minmax(0,1fr);gap:10px}
+  .ic{width:36px;height:36px}
+  .ic svg{width:17px;height:17px}
+  .tl::before{left:17px}
+  .addrow{margin-left:46px}
+  .dayhead h2{font-size:23px}
 }
 @media print{
-  .toolbar,.acts,.addrow,.back,.itemform{display:none!important}
+  .topbar,.bar,.acts,.addrow,.itemform,.lock,.stat.next{display:none!important}
   .ev{break-inside:avoid}
-  .ev.past{opacity:1}
+  .ev.past .body,.ev.past .ic{opacity:1}
 }
 </style>
 </head>
 <body>
+<header class="topbar"><div class="topin">
+  <a class="brand" href="./"><span class="mark" aria-hidden="true"></span>Madrid <small>Oct 29 – Nov 1</small></a>
+  <nav class="tabs" aria-label="Sections"><a href="./">Restaurants</a><a href="itinerary.html" aria-current="page">Itinerary</a></nav>
+</div></header>
 <div class="wrap">
-  <div class="back"><a href="./">← Food guide</a></div>
-  <h1>Madrid itinerary</h1>
-  <p class="sub" id="sum"></p>
-  <div class="toolbar">
+  <div class="hero">
+    <p class="eyebrow">Itinerary · Nomad, Gran Vía</p>
+    <h1>Madrid, day by day</h1>
+    <p class="sub">Art, food, shopping, football and a little wandering. Plans live here; meals come from the restaurants you book in the guide.</p>
+    <div class="stats" id="stats"></div>
+  </div>
+  <div id="lock"></div>
+  <div class="bar">
     <nav class="jump" id="jump" aria-label="Jump to a day"></nav>
-    <div class="end" id="cloud"></div>
+    <div class="cloud" id="cloud"></div>
   </div>
   <div id="days"></div>
-  <footer>Meals come from bookings in the food guide; mark a restaurant as booked there and it shows up here. Everything is also kept on this device, so the plan opens without a connection.</footer>
+  <footer>Everything is also kept on this device, so the plan opens without a connection. Prices, hours and kick-off times change: check the day before.</footer>
 </div>
 
 <script src="data.js"></script>
@@ -131,9 +143,23 @@ function isUrl(s){ return /^https?:\/\/\S+$/i.test(String(s||"")); }
 
 var KINDS = [
   {k:"flight", l:"Flight"}, {k:"transfer", l:"Train / transfer"}, {k:"stay", l:"Hotel"},
-  {k:"sight", l:"Sight"}, {k:"food", l:"Food & drink"}, {k:"event", l:"Event"}, {k:"other", l:"Other"}
+  {k:"sight", l:"Sight"}, {k:"food", l:"Food & drink"}, {k:"game", l:"Match"}, {k:"event", l:"Event"}, {k:"other", l:"Other"}
 ];
 function kindLabel(k){ for(var i=0;i<KINDS.length;i++) if(KINDS[i].k===k) return KINDS[i].l; return "Other"; }
+
+/* Line icons (24px grid, drawn with the current colour) */
+function svg(d){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>'; }
+var ICON = {
+  flight: svg('<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>'),
+  transfer: svg('<rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 10h14M9 17l-2 4M15 17l2 4"/><circle cx="9" cy="13.5" r=".5"/><circle cx="15" cy="13.5" r=".5"/>'),
+  stay: svg('<path d="M2 4v16M2 8h17a3 3 0 0 1 3 3v9M2 16h20"/><circle cx="7" cy="12" r="2"/>'),
+  sight: svg('<path d="M3 21h18M5 21v-9M9.5 21v-9M14.5 21v-9M19 21v-9M3 10h18L12 3z"/>'),
+  food: svg('<path d="M4 3v6a3 3 0 0 0 6 0V3M7 3v18M20 15V3a5 5 0 0 0-4 5v5a2 2 0 0 0 2 2h2zm0 0v6"/>'),
+  meal: svg('<path d="M4 3v6a3 3 0 0 0 6 0V3M7 3v18M20 15V3a5 5 0 0 0-4 5v5a2 2 0 0 0 2 2h2zm0 0v6"/>'),
+  game: svg('<circle cx="12" cy="12" r="9"/><path d="m12 7.5 4 2.9-1.5 4.6h-5L8 10.4z"/><path d="M12 3v4.5M21 10.5l-5 0M17.5 19.5 14.5 15M6.5 19.5 9.5 15M3 10.5h5"/>'),
+  event: svg('<path d="M3 9a3 3 0 0 0 0 6v3a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-3a3 3 0 0 0 0-6V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1z"/><path d="M14 5v2M14 11v2M14 17v2"/>'),
+  other: svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>')
+};
 
 /* Bookings, added places and the trip passcode are shared with the food guide through the same keys. */
 var BOOK = lsJson("madridBookings", {});
@@ -142,11 +168,9 @@ var PLAN = lsJson("madridPlan", []);
 function savePlan(){ lsSet("madridPlan", JSON.stringify(PLAN)); }
 
 /* Restaurant lookup for meals: built-in list first, then places added from the guide */
-var TIERS = [[30,"1"],[50,"2"],[80,"3"],[1e9,"4"]];
-function tierOf(lo, hi){ if(lo==null || lo==="") return "0"; var m = (+lo + +(hi==null||hi===""?lo:hi))/2; for(var i=0;i<TIERS.length;i++) if(m<TIERS[i][0]) return TIERS[i][1]; return "4"; }
 function place(n){
-  for(var i=0;i<DATA.length;i++) for(var j=0;j<DATA[i].items.length;j++){ var it = DATA[i].items[j]; if(it.n===n) return {a:it.a, tier:tierOf(it.lo, it.hi)}; }
-  for(var k=0;k<USER.length;k++) if(USER[k] && USER[k].n===n) return {a:USER[k].a || "Madrid", tier:tierOf(USER[k].lo, USER[k].hi), lat:USER[k].lat, lng:USER[k].lng};
+  for(var i=0;i<DATA.length;i++) for(var j=0;j<DATA[i].items.length;j++){ var it = DATA[i].items[j]; if(it.n===n) return {a:it.a}; }
+  for(var k=0;k<USER.length;k++) if(USER[k] && USER[k].n===n) return {a:USER[k].a || "Madrid", lat:USER[k].lat, lng:USER[k].lng};
   return null;
 }
 function mapsFor(n, p){ return p && p.lat!=null && p.lat!=="" ? "https://www.google.com/maps/search/?api=1&query="+p.lat+","+p.lng : maps(n); }
@@ -163,10 +187,17 @@ function rpc(fn, args){
 function setCloud(status, msg){ CLOUD.status = status; CLOUD.msg = msg || ""; renderCloud(); }
 function renderCloud(){
   var c = CLOUD, dot = {ok:"var(--t1)", busy:"var(--t2)", err:"var(--t4)", off:"var(--t0)"}[c.status] || "var(--t0)";
-  var txt = c.status==="ok" ? "Synced to the cloud" : c.status==="busy" ? "Syncing…" : c.status==="err" ? (c.msg || "Couldn’t reach the cloud. Showing what’s saved on this device.") : "Not synced: this device only";
+  var txt = c.status==="ok" ? "Synced" : c.status==="busy" ? "Syncing…" : c.status==="err" ? (c.msg || "Couldn’t reach the cloud. Showing what’s saved on this device.") : "Locked: this device only";
   document.getElementById("cloud").innerHTML = '<span class="sync"><span class="dot" style="--tc:'+dot+'"></span>'+esc(txt)+'</span>'+
-    (c.pass ? '<button type="button" class="linkbtn" id="bLock">Lock this device</button>'
-      : '<form id="unlock" class="unlock"><input id="passIn" type="password" autocomplete="current-password" placeholder="Trip passcode" aria-label="Trip passcode"><button type="submit" class="btn">Unlock & sync</button></form>');
+    (c.pass ? '<button type="button" class="linkbtn" id="bLock">Lock this device</button>' : '');
+  // Locked: one clear card with the passcode box, instead of a plan that looks empty
+  var lock = document.getElementById("lock");
+  if(c.pass){ lock.innerHTML = ""; return; }
+  if(document.getElementById("passIn")) { var m = lock.querySelector(".msg"); if(m) m.textContent = c.status==="err" ? txt : ""; return; }
+  lock.innerHTML = '<section class="lock panelcard" aria-labelledby="lockh"><div><h2 id="lockh">Unlock your plan</h2>'+
+    '<p>Your plans are saved in the cloud. Enter the trip passcode once on this device to load them; after that they open even offline.</p></div>'+
+    '<form id="unlock" class="unlock"><input id="passIn" type="password" autocomplete="current-password" placeholder="Trip passcode" aria-label="Trip passcode"><button type="submit" class="btn primary">Unlock</button></form>'+
+    '<p class="msg" aria-live="polite">'+(c.status==="err" ? esc(txt) : "")+'</p></section>';
 }
 function isLocal(it){ return String(it.id).indexOf("local-")===0; }
 function itemData(it){ return {d:it.d, t:it.t || "", kind:it.kind, title:it.title, place:it.place || "", link:it.link || "", note:it.note || ""}; }
@@ -202,7 +233,7 @@ function cloudLoad(){
       return chain.then(function(){ if(CLOUD.status!=="err") setCloud("ok"); render(); });
     }, cloudFail);
   }, function(e){
-    if(e.status===400 || /passcode/i.test(e.message)){ CLOUD.pass = ""; lsSet("madridTripPass", ""); setCloud("err", "That passcode didn’t work. Try again."); }
+    if(e.status===400 || e.status===403 || /passcode/i.test(e.message)){ CLOUD.pass = ""; lsSet("madridTripPass", ""); setCloud("err", "That passcode didn’t work. Try again."); }
     else setCloud("err");
   });
 }
@@ -213,7 +244,8 @@ var FORM = null; // {id: item id or null, d: day} while the add/edit form is ope
 function pad(n){ return (n<10?"0":"")+n; }
 function todayStr(){ var x = new Date(); return x.getFullYear()+"-"+pad(x.getMonth()+1)+"-"+pad(x.getDate()); }
 function nowTime(){ var x = new Date(); return pad(x.getHours())+":"+pad(x.getMinutes()); }
-function dayLabel(d){ for(var i=0;i<TRIP.length;i++) if(TRIP[i].d===d) return TRIP[i].l; var x = new Date(d+"T12:00:00"); return isNaN(x) ? d : x.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}).replace(",", ""); }
+function dateOf(d){ return new Date(d+"T12:00:00"); }
+function dayLabel(d){ for(var i=0;i<TRIP.length;i++) if(TRIP[i].d===d) return TRIP[i].l; var x = dateOf(d); return isNaN(x) ? d : x.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}).replace(",", ""); }
 function tripDay(d){ for(var i=0;i<TRIP.length;i++) if(TRIP[i].d===d) return TRIP[i]; return null; }
 
 function dayList(){
@@ -227,34 +259,48 @@ function dayList(){
 /* Everything on one day as sortable rows: plans, booked meals and meals still open */
 function rowsFor(d){
   var rows = [];
-  PLAN.forEach(function(it){ if(it.d===d) rows.push({t:it.t || "", kind:"plan", it:it}); });
+  PLAN.forEach(function(it){ if(it.d===d) rows.push({d:d, t:it.t || "", kind:"plan", it:it}); });
   var booked = {};
   Object.keys(BOOK).forEach(function(n){
     var b = BOOK[n], p = place(n); if(!b || b.d!==d || !p) return;
     booked[mealOf(b.t)] = true;
-    rows.push({t:b.t || "", kind:"meal", n:n, b:b, p:p});
+    rows.push({d:d, t:b.t || "", kind:"meal", n:n, b:b, p:p});
   });
   var td = tripDay(d);
-  (td ? td.meals : []).forEach(function(m){ if(!booked[m]) rows.push({t:m==="lunch" ? "14:00" : "21:00", kind:"open", meal:m}); });
+  (td ? td.meals : []).forEach(function(m){ if(!booked[m]) rows.push({d:d, t:m==="lunch" ? "14:00" : "21:00", kind:"open", meal:m}); });
   rows.sort(function(a,b){ return (a.t||"") < (b.t||"") ? -1 : (a.t||"") > (b.t||"") ? 1 : (a.kind==="open") - (b.kind==="open"); });
   return rows;
+}
+function rowTitle(r){ return r.kind==="meal" ? r.n : r.it.title; }
+
+/* The next timed plan or meal from now on, across the whole trip */
+function findNext(){
+  var today = todayStr(), now = nowTime(), days = dayList();
+  for(var i=0;i<days.length;i++){
+    if(days[i] < today) continue;
+    var rows = rowsFor(days[i]);
+    for(var j=0;j<rows.length;j++){ var r = rows[j]; if(r.kind!=="open" && r.t && (days[i] > today || r.t >= now)) return r; }
+  }
+  return null;
 }
 
 function rowHtml(r, cls){
   if(r.kind==="open"){
-    return '<li class="ev open"><time>'+(r.meal==="lunch"?"Lunch":"Dinner")+'</time><div>Not booked yet · <a href="./">Find a place in the guide</a></div></li>';
+    return '<li class="ev open"><div class="ic">'+ICON.meal+'</div><div class="body"><b>'+(r.meal==="lunch"?"Lunch":"Dinner")+'</b> isn’t booked yet · <a href="./">Find a place in the guide</a></div></li>';
   }
   if(r.kind==="meal"){
     var b = r.b, extra = [b.p ? b.p+" people" : "", b.note || ""].filter(Boolean).join(" · ");
-    return '<li class="ev meal tier'+r.p.tier+cls+'"><time>'+esc(b.t)+'</time><div>'+
-      '<div class="kind">'+(mealOf(b.t)==="lunch"?"Lunch":"Dinner")+'</div><p class="title">'+esc(r.n)+'</p>'+
+    return '<li class="ev k-meal'+cls+'"><div class="ic">'+ICON.meal+'</div><div class="body">'+
+      '<div class="top"><time>'+esc(b.t)+'</time><span class="kind">'+(mealOf(b.t)==="lunch"?"Lunch":"Dinner")+'</span><span class="booked">✓ Booked</span></div>'+
+      '<p class="title">'+esc(r.n)+'</p>'+
       '<p class="meta"><a href="'+mapsFor(r.n, r.p)+'" target="_blank" rel="noopener">'+esc(r.p.a)+'</a></p>'+
       (extra ? '<p class="txt">'+esc(extra)+'</p>' : '')+'</div></li>';
   }
-  var it = r.it;
-  if(FORM && FORM.id===it.id) return '<li>'+formHtml(it)+'</li>';
-  return '<li class="ev k-'+esc(it.kind || "other")+cls+'">'+(it.t ? '<time>'+esc(it.t)+'</time>' : '<time class="any">Any time</time>')+'<div>'+
-    '<div class="kind">'+esc(kindLabel(it.kind))+'</div><p class="title">'+esc(it.title)+'</p>'+
+  var it = r.it, k = ICON[it.kind] ? it.kind : "other";
+  if(FORM && FORM.id===it.id) return '<li class="ev k-'+k+'"><div class="ic">'+ICON[k]+'</div>'+formHtml(it)+'</li>';
+  return '<li class="ev k-'+k+cls+'" id="i'+esc(it.id)+'"><div class="ic">'+ICON[k]+'</div><div class="body">'+
+    '<div class="top">'+(it.t ? '<time>'+esc(it.t)+'</time>' : '<time class="any">Any time</time>')+'<span class="kind">'+esc(kindLabel(it.kind))+'</span></div>'+
+    '<p class="title">'+esc(it.title)+'</p>'+
     (it.place ? '<p class="meta"><a href="'+(isUrl(it.place) ? esc(it.place) : maps(it.place))+'" target="_blank" rel="noopener">'+esc(it.place)+'</a></p>' : '')+
     (it.note ? '<p class="txt">'+esc(it.note)+'</p>' : '')+
     '<div class="acts">'+(isUrl(it.link) ? '<a class="btn" href="'+esc(it.link)+'" target="_blank" rel="noopener">Open link ↗</a>' : '')+
@@ -266,7 +312,7 @@ function formHtml(it){
   var v = it || {d:FORM.d, t:"", kind:"sight", title:"", place:"", link:"", note:""};
   function val(x){ return esc(x==null ? "" : x); }
   var days = dayList(); if(days.indexOf(v.d)<0) days.push(v.d);
-  return '<form class="itemform" id="itemForm" novalidate>'+
+  return '<form class="itemform panelcard" id="itemForm" novalidate>'+
     '<h3>'+(it ? "Edit plan" : "Add to "+esc(dayLabel(v.d)))+'</h3>'+
     '<label class="full">What *<input name="title" type="text" required maxlength="120" value="'+val(v.title)+'" placeholder="e.g. Prado Museum, IB 6252 to Madrid, Check in at hotel" autocomplete="off"></label>'+
     '<label>Type<select name="kind">'+KINDS.map(function(k){ return '<option value="'+k.k+'"'+(k.k===v.kind?" selected":"")+'>'+k.l+'</option>'; }).join("")+'</select></label>'+
@@ -282,32 +328,47 @@ function formHtml(it){
   '</form>';
 }
 
+function statsHtml(plans, filled, total, next){
+  var today = todayStr(), first = TRIP[0].d, last = TRIP[TRIP.length-1].d, when;
+  if(today < first){ var n = Math.round((dateOf(first) - dateOf(today)) / 864e5); when = n===1 ? "Tomorrow" : "In "+n+" days"; }
+  else if(today <= last){ when = "Day "+(Math.round((dateOf(today) - dateOf(first)) / 864e5)+1)+" of "+TRIP.length; }
+  else when = "Done";
+  var h = '<div class="stat"><div class="k">Trip</div><div class="v">'+when+'</div></div>'+
+    '<div class="stat"><div class="k">Plans</div><div class="v">'+plans+'</div></div>'+
+    '<div class="stat"><div class="k">Meals booked</div><div class="v">'+filled+' / '+total+'</div></div>';
+  if(next){
+    var anchor = next.kind==="plan" ? "#i"+esc(next.it.id) : "#d"+next.d;
+    h += '<a class="stat next" href="'+anchor+'"><div class="k">Up next</div><div class="v">'+esc(rowTitle(next))+'</div><div class="w">'+esc(dayLabel(next.d))+' · '+esc(next.t)+'</div></a>';
+  }
+  return h;
+}
+
 function render(){
-  var today = todayStr(), now = nowTime(), nextDone = false;
+  var today = todayStr(), next = findNext();
   var days = dayList(), plans = 0, total = 0, filled = 0;
   var html = days.map(function(d){
-    var rows = rowsFor(d), isToday = d===today, past = d < today;
-    var td = tripDay(d);
-    if(td) td.meals.forEach(function(m){ total++; });
+    var rows = rowsFor(d), isToday = d===today, past = d < today, td = tripDay(d), x = dateOf(d);
+    if(td) total += td.meals.length;
     rows.forEach(function(r){ if(r.kind==="plan") plans++; if(r.kind==="meal" && td && td.meals.indexOf(mealOf(r.b.t))>=0) filled++; });
     var items = rows.map(function(r){
       var cls = "";
       if(r.kind!=="open"){
-        if(past || (isToday && r.t && r.t < now)) cls = " past";
-        else if(isToday && !nextDone && r.t){ cls = " next"; nextDone = true; }
+        if(r===next || (next && r.kind===next.kind && r.d===next.d && r.t===next.t && rowTitle(r)===rowTitle(next))) cls = " next";
+        else if(past || (isToday && r.t && r.t < nowTime())) cls = " past";
       }
       return rowHtml(r, cls);
     }).join("");
     var adding = FORM && FORM.id==null && FORM.d===d;
     return '<section class="day'+(isToday?" today":"")+'" id="d'+d+'" aria-labelledby="h'+d+'">'+
-      '<div class="dayhead"><h2 id="h'+d+'">'+esc(dayLabel(d))+'</h2>'+(td ? '' : '<span class="note">Outside the trip dates</span>')+'</div>'+
-      (items ? '<ol class="tl">'+items+'</ol>' : '<p class="empty">Nothing planned yet.</p>')+
+      '<div class="dayhead"><div class="date" aria-hidden="true"><span class="dow">'+x.toLocaleDateString("en-US",{weekday:"short"})+'</span><span class="dn">'+x.getDate()+'</span><span class="mo">'+x.toLocaleDateString("en-US",{month:"short"})+'</span></div>'+
+        '<div><h2 id="h'+d+'"><span class="sr">'+esc(dayLabel(d))+': </span>'+esc(td && td.title ? td.title : dayLabel(d))+(isToday ? '<span class="pill">Today</span>' : '')+(td ? '' : '<span class="pill soft">Outside the trip</span>')+'</h2>'+
+        (td && td.sub ? '<p>'+esc(td.sub)+'</p>' : '')+'</div></div>'+
+      (items ? '<ol class="tl">'+items+'</ol>' : '<p class="msg">Nothing planned yet.</p>')+
       (adding ? formHtml(null) : '<div class="addrow"><button type="button" class="btn" data-add="'+d+'">+ Add to '+esc(dayLabel(d))+'</button></div>')+
     '</section>';
   }).join("");
-  var first = TRIP[0].l, last = TRIP[TRIP.length-1].l;
-  document.getElementById("sum").innerHTML = esc(first)+' – '+esc(last)+' · <b>'+plans+'</b> '+(plans===1?"plan":"plans")+' · <b>'+filled+' of '+total+'</b> meals booked';
-  document.getElementById("jump").innerHTML = days.map(function(d){ return '<a class="chip'+(d===today?" today":"")+'" href="#d'+d+'">'+esc(dayLabel(d))+'</a>'; }).join("");
+  document.getElementById("stats").innerHTML = statsHtml(plans, filled, total, next);
+  document.getElementById("jump").innerHTML = days.map(function(d){ var x = dateOf(d); return '<a class="chip'+(d===today?" on":"")+'" href="#d'+d+'">'+x.toLocaleDateString("en-US",{weekday:"short"})+' <b>'+x.getDate()+'</b></a>'; }).join("");
   var keep = document.activeElement && document.activeElement.closest && document.activeElement.closest("#itemForm");
   document.getElementById("days").innerHTML = html;
   if(FORM && !keep){ var f = document.getElementById("itemForm"); if(f){ f.elements.title.focus(); } }
@@ -354,6 +415,7 @@ document.addEventListener("keydown", function(e){ if(e.key==="Escape" && FORM){ 
 window.addEventListener("storage", function(e){
   if(e.key==="madridBookings"){ BOOK = lsJson("madridBookings", {}); render(); }
   if(e.key==="madridPlaces"){ USER = lsJson("madridPlaces", []); render(); }
+  if(e.key==="madridTripPass" && e.newValue && !CLOUD.pass){ CLOUD.pass = e.newValue; cloudLoad(); }
 });
 
 renderCloud();

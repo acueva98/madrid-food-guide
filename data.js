@@ -127,10 +127,10 @@ var GEO = {
  "Casa Lucio":[40.4119,-3.7086],"Ten con Ten":[40.4253,-3.6869],"Don Giovanni":[40.4072,-3.6795]
 };
 
-/* Trip days and the meals to plan on each. */
+/* Trip days, the meals to plan on each, and each day's headline for the itinerary. */
 var TRIP = [
-  {d:"2026-10-29", l:"Thu Oct 29", meals:["lunch","dinner"]},
-  {d:"2026-10-30", l:"Fri Oct 30", meals:["lunch","dinner"]},
-  {d:"2026-10-31", l:"Sat Oct 31", meals:["lunch","dinner"]},
-  {d:"2026-11-01", l:"Sun Nov 1",  meals:["lunch"]}
+  {d:"2026-10-29", l:"Thu Oct 29", meals:["lunch","dinner"], title:"Arrival day", sub:"Salamanca and an easy first evening"},
+  {d:"2026-10-30", l:"Fri Oct 30", meals:["lunch","dinner"], title:"Art and matcha", sub:"Thyssen, Barrio de las Letras and Reina Sofía"},
+  {d:"2026-10-31", l:"Sat Oct 31", meals:["lunch","dinner"], title:"Match day", sub:"La Latina, Salesas, and Atleti and Betis on the screen"},
+  {d:"2026-11-01", l:"Sun Nov 1",  meals:["lunch"], title:"Easy morning", sub:"A last walk, then the 15:30 flight"}
 ];

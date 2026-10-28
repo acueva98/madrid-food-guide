@@ -5,75 +5,35 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Madrid Food Guide</title>
 <meta name="description" content="A shortlist of Madrid restaurants from a friend's recommendations, with prices, links and a map.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<link rel="stylesheet" href="theme.css">
 <style>
 /* Layout: title, a slim toolbar (filters toggle, favorites, count), collapsible filter panel; cards on the left, sticky real map on the right; on phones the map sits above the list. Price tiers are colour-coded everywhere (chips, cards, pins). */
-:root{
-  --bg:#faf7f2;--card:#ffffff;--ink:#1f1b16;--muted:#6b6258;--line:#e2d9cb;--chip:#efe7da;--chip-on:#1f1b16;--chip-on-ink:#faf7f2;
-  --fav:#d9542b;--hot:#fbf1ea;
-  --t1:#2e7d4f;--t2:#2b6cb0;--t3:#7b4bb0;--t4:#b8323a;--t0:#8a8178;
-  --road:#ddd3c4;--park:#dbe6cf;--park-ink:#4f6b3a;
-  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
-}
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    --bg:#16130f;--card:#201c17;--ink:#f1ebe2;--muted:#a79d90;--line:#373027;--chip:#2a251e;--chip-on:#f1ebe2;--chip-on-ink:#16130f;
-    --fav:#ff8a66;--hot:#2e231c;
-    --t1:#6fcf97;--t2:#7ab3ea;--t3:#c3a0ef;--t4:#f08a96;--t0:#9a9086;
-    --road:#3b342b;--park:#25301f;--park-ink:#9fbf86;
-    color-scheme:dark;
-  }
-}
-:root[data-theme="dark"]{
-  --bg:#16130f;--card:#201c17;--ink:#f1ebe2;--muted:#a79d90;--line:#373027;--chip:#2a251e;--chip-on:#f1ebe2;--chip-on-ink:#16130f;
-  --fav:#ff8a66;--hot:#2e231c;
-  --t1:#6fcf97;--t2:#7ab3ea;--t3:#c3a0ef;--t4:#f08a96;--t0:#9a9086;
-  --road:#3b342b;--park:#25301f;--park-ink:#9fbf86;
-  color-scheme:dark;
-}
-*{box-sizing:border-box}
-[hidden]{display:none!important}
-.btn[aria-expanded="true"]{border-color:var(--ink)}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-.wrap{max-width:1240px;margin:0 auto;padding-inline:16px;padding-block:20px 48px}
-h1{font-size:30px;margin:0;letter-spacing:-.02em;text-wrap:balance}
-.sub{color:var(--muted);margin:2px 0 14px;font-size:14px}
 
-/* One button style for everything */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:34px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-family:inherit;font-weight:500;font-size:13px;line-height:1;text-decoration:none;white-space:nowrap;cursor:pointer}
-.btn:hover{border-color:var(--ink)}
-.btn[aria-pressed="true"]{border-color:var(--ink);background:var(--chip-on);color:var(--chip-on-ink)}
-.btn.fav[aria-pressed="true"]{background:var(--card);border-color:var(--fav);color:var(--fav)}
-.btn .n{display:inline-flex;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--fav);color:#fff;font-size:11px;align-items:center;justify-content:center}
-.btn .n:empty{display:none}
-button:focus-visible,a:focus-visible{outline:2px solid var(--fav);outline-offset:2px}
-
-.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-block:10px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-block:14px;border-bottom:1px solid var(--line)}
 .toolbar .count{margin-left:auto;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
-.linkbtn{font:inherit;font-size:13px;border:0;background:none;color:var(--ink);text-decoration:underline;cursor:pointer;padding:4px}
 .panel{display:grid;gap:10px;padding-block:12px;border-bottom:1px solid var(--line)}
 .frow{display:grid;grid-template-columns:110px minmax(0,1fr);gap:8px;align-items:start}
 .flabel{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding-top:9px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--ink);font:inherit;font-size:13px;cursor:pointer}
-.chip[aria-pressed="true"]{background:var(--chip-on);color:var(--chip-on-ink);border-color:var(--chip-on)}
-.dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:var(--tc,var(--t0))}
 /* Trip planner */
-.trip{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:14px;margin:4px 0 14px}
+.trip{border:1px solid var(--line);border-radius:20px;background:linear-gradient(135deg,var(--accent-soft),var(--card) 60%);box-shadow:var(--shadow);padding:20px;margin:0 0 8px}
 .triphead{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 14px;margin-bottom:12px}
-.triphead h2{margin:0;font-size:17px;letter-spacing:-.01em;text-transform:none;color:var(--ink)}
+.triphead h2{margin:0;font:600 24px/1.15 var(--serif);letter-spacing:-.01em;text-transform:none;color:var(--ink)}
 .triphead .sum{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .triphead .sum b{color:var(--ink)}
-.triphead .sum a{color:var(--ink);font-weight:600}
+.triphead .sum a{color:var(--accent);font-weight:700;text-decoration:none}
+.triphead .sum a:hover{text-decoration:underline}
 .tripact{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .days{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .day{display:grid;gap:6px;align-content:start}
 .dayname{font-size:12px;font-weight:650;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
-.slot{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;min-height:58px;display:grid;gap:2px;align-content:start}
+.slot{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:10px 12px;font-size:13px;min-height:62px;display:grid;gap:2px;align-content:start}
 .slot .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-.slot.open{border-style:dashed;color:var(--muted)}
-.slot.booked{border-left:4px solid var(--tc)}
+.slot.open{border-style:dashed;background:transparent;color:var(--muted)}
+.slot.booked{box-shadow:inset 4px 0 0 var(--tc)}
 .slot button.go{all:unset;cursor:pointer;font-weight:650;color:var(--ink)}
 .slot button.go:hover{text-decoration:underline}
 .slot button.go:focus-visible{outline:2px solid var(--fav);outline-offset:2px}
@@ -82,14 +42,11 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--fav);outline-offset
 .slot .warn{color:var(--t4);font-size:12px}
 .todo{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:12px;font-size:13px;color:var(--muted)}
 .todo .chip{color:var(--ink)}
-.sync{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
-.unlock{display:flex;gap:6px}
-.unlock input{height:34px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;font-size:13px;width:170px}
 .copied{font-size:12px;color:var(--t1)}
 .linkout{width:100%;font:12px ui-monospace,Menlo,monospace;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);margin-top:8px}
 /* Booking on cards */
 .bookbadge{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:4px 10px;border-radius:999px;background:var(--t1);color:#fff;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
-.bookform{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.bookform{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--bg)}
 .bookform label{display:grid;gap:3px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 .bookform input,.bookform select{height:34px;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;font-size:13px;text-transform:none;letter-spacing:0}
 .bookform .acts{display:flex;gap:6px;align-items:end;grid-column:1/-1}
@@ -97,8 +54,8 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--fav);outline-offset
 .mk.isbooked{width:24px;height:24px;margin:-2px 0 0 -2px;font-size:13px;font-weight:700}
 @media (max-width:900px){ .days{grid-template-columns:repeat(2,minmax(0,1fr))} }
 /* Add / edit a place */
-.placeform{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
-.placeform h2{grid-column:1/-1;margin:0;font-size:17px;letter-spacing:-.01em;text-transform:none;color:var(--ink)}
+.placeform{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0;padding:18px;border:1px solid var(--line);border-radius:18px;background:var(--card);box-shadow:var(--shadow)}
+.placeform h2{grid-column:1/-1;margin:0;font:600 21px/1.2 var(--serif);letter-spacing:-.01em;text-transform:none;color:var(--ink)}
 .placeform .full{grid-column:1/-1}
 .placeform label{display:grid;gap:3px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 .placeform input,.placeform select,.placeform textarea{min-height:34px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;font-size:14px;text-transform:none;letter-spacing:0;width:100%}
@@ -120,17 +77,16 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--fav);outline-offset
 .favrow a{color:var(--ink);margin-left:4px}
 
 /* tiers */
-.tier1{--tc:var(--t1)}.tier2{--tc:var(--t2)}.tier3{--tc:var(--t3)}.tier4{--tc:var(--t4)}.tier0{--tc:var(--t0)}
 
 .main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:24px;align-items:start;margin-top:18px}
 .list > h2:first-child{margin-top:0}
-h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:26px 0 2px}
+h2{font:600 24px/1.15 var(--serif);letter-spacing:-.01em;color:var(--ink);margin:34px 0 2px}
 .cathint{font-size:13px;color:var(--muted);margin:0 0 10px}
-.card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--tc);border-radius:12px;padding:14px;margin-bottom:10px;transition:background .15s}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:inset 4px 0 0 var(--tc),var(--shadow);padding:18px 18px 16px 22px;margin-bottom:12px;transition:background .15s,transform .15s}
 .card.hot{background:var(--hot)}
 .top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
 .top > div:first-child{min-width:0}
-.name{font-size:18px;font-weight:650;margin:0}
+.name{font:600 21px/1.2 var(--serif);letter-spacing:-.01em;margin:0}
 .addr{font-size:13px;color:var(--muted);margin:2px 0 0}
 .price{flex:0 0 auto;text-align:right}
 .tierbadge{display:inline-flex;align-items:center;gap:6px;color:var(--tc);font-weight:700;font-size:15px;letter-spacing:.02em}
@@ -143,9 +99,9 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute
 .links{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .empty{color:var(--muted);text-align:center;padding:30px 0}
 
-.mapcol{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
-.mapbox{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-#map{height:calc(100vh - 110px);min-height:420px;max-height:820px;width:100%;background:var(--bg)}
+.mapcol{position:sticky;top:calc(env(safe-area-inset-top,0px) + 72px)}
+.mapbox{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);overflow:hidden}
+#map{height:calc(100vh - 170px);min-height:420px;max-height:820px;width:100%;background:var(--bg)}
 #map svg.sketch{width:100%;height:100%;display:block}
 .mapkey{display:flex;flex-wrap:wrap;gap:6px 14px;padding:8px 12px;font-size:12px;color:var(--muted);border-top:1px solid var(--line)}
 .mapkey span{display:inline-flex;align-items:center;gap:5px}
@@ -187,7 +143,6 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute
 .sketch .tip{font:600 12px/1 -apple-system,BlinkMacSystemFont,sans-serif;fill:var(--ink);paint-order:stroke;stroke:var(--bg);stroke-width:4px;pointer-events:none}
 
 .fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:1001;height:40px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
-footer{font-size:12px;color:var(--muted);margin-top:28px}
 
 @media (max-width:900px){
   .main{grid-template-columns:minmax(0,1fr)}
@@ -197,15 +152,21 @@ footer{font-size:12px;color:var(--muted);margin-top:28px}
   .flabel{padding-top:0}
 }
 @media (min-width:901px){ .fab{display:none!important} }
-@media (prefers-reduced-motion:reduce){ *{transition:none!important} }
 </style>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" crossorigin=""></script>
 </head>
 <body>
+<header class="topbar"><div class="topin">
+  <a class="brand" href="./"><span class="mark" aria-hidden="true"></span>Madrid <small>Oct 29 – Nov 1</small></a>
+  <nav class="tabs" aria-label="Sections"><a href="./" aria-current="page">Restaurants</a><a href="itinerary.html">Itinerary</a></nav>
+</div></header>
 <div class="wrap">
-  <h1>Madrid food guide</h1>
-  <p class="sub">A friend's shortlist of Madrid restaurants, with prices per person, links and a map.</p>
+  <div class="hero">
+    <p class="eyebrow">Food guide</p>
+    <h1>Where to eat in Madrid</h1>
+    <p class="sub">A friend's shortlist of Madrid restaurants, with prices per person, links and a map.</p>
+  </div>
 
   <section class="trip" id="trip" aria-label="Your trip"></section>
 
