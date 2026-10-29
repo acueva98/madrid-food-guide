@@ -150,6 +150,31 @@ var GEO = {
  "Casa Dani":[40.42717,-3.68575],"La Duquesita":[40.42568,-3.69696],"Álex Cordobés":[40.42805,-3.68370]
 };
 
+/* Travel times between consecutive stops, routed once on 2026-10-28 (routing.openstreetmap.de, OSM data).
+   Key: "from lat,lng>to lat,lng" (5 decimals). Value: [walk min, metro/bus min, Uber min, km on foot].
+   Walk: street distance at 4 km/h to allow for crossings and hills (Thyssen → Fismuler is Google's 30 min).
+   Uber: routed drive time +40% for traffic (+20% on the airport run) plus 5 min pickup.
+   Metro/bus: estimated, about 12 min to reach the station and wait, then 22 km/h.
+   Stops added later fall back to a straight-line estimate on the page. */
+var LEGS = {
+  "40.41950,-3.69944>40.42805,-3.68370":[31,20,11,2.09], // Nomad, Gran Vía: drop bags → Cheesecake at Álex Cordobés
+  "40.42805,-3.68370>40.42371,-3.68513":[9,14,9,0.59], // Cheesecake at Álex Cordobés → Wander Salamanca: Jorge Juan a
+  "40.42371,-3.68513>40.43340,-3.70600":[37,20,13,2.47], // Wander Salamanca: Jorge Juan a → Caja de Cerillas
+  "40.43340,-3.70600>40.43277,-3.70103":[9,14,8,0.61], // Caja de Cerillas → Walk Chamberí: Plaza de Olavid
+  "40.43277,-3.70103>40.42696,-3.70409":[13,14,9,0.89], // Walk Chamberí: Plaza de Olavid → Malasaña: Plaza del Dos de May
+  "40.42696,-3.70409>40.42406,-3.71761":[23,15,14,1.54], // Malasaña: Plaza del Dos de May → Sunset at Templo de Debod
+  "40.42406,-3.71761>40.42830,-3.68380":[52,20,15,3.44], // Sunset at Templo de Debod → La Maruca (Velázquez)
+  "40.41621,-3.69493>40.42817,-3.69752":[30,15,11,1.63], // Thyssen-Bornemisza Museum → Fismuler
+  "40.42817,-3.69752>40.42913,-3.68222":[21,15,11,1.43], // Fismuler → Matcha with your friend at Mai
+  "40.42913,-3.68222>40.40804,-3.69442":[49,20,14,3.25], // Matcha with your friend at Mai → Reina Sofía: Guernica and mode
+  "40.40804,-3.69442>40.42523,-3.69631":[36,20,15,2.40], // Reina Sofía: Guernica and mode → Casa Salesas
+  "40.41238,-3.71178>40.41240,-3.70926":[5,13,7,0.32], // COCOL, La Latina → Tapas lunch on Cava Baja
+  "40.41240,-3.70926>40.41380,-3.68210":[43,20,20,2.87], // Tapas lunch on Cava Baja → Retiro Park: the lake and the 
+  "40.41380,-3.68210>40.42680,-3.69830":[34,20,15,2.25], // Retiro Park: the lake and the  → Salesas: boutiques, La Comunal
+  "40.42680,-3.69830>40.42170,-3.68970":[15,15,10,1.02], // Salesas: boutiques, La Comunal → Dinner idea: Casa Canito
+  "40.41950,-3.69944>40.49522,-3.57337":[252,60,35,16.80], // Easy morning: breakfast, last  → Head to the airport
+};
+
 /* Trip days, the meals to plan on each, and each day's headline for the itinerary. */
 var TRIP = [
   {d:"2026-10-29", l:"Thu Oct 29", meals:["lunch","dinner"], title:"Arrival day", sub:"Salamanca and cheesecake, Chamberí to Malasaña, then sunset at Debod"},
