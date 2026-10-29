@@ -76,6 +76,13 @@ a.stat.next:hover{filter:brightness(1.05)}
 .ev.past .body,.ev.past .ic{opacity:.5}
 .ev.next .body{box-shadow:0 0 0 2px var(--accent),var(--shadow)}
 .ev.next .ic{background:var(--accent);color:var(--accent-ink)}
+/* Travel time between two stops, sitting on the timeline line */
+.leg{display:grid;grid-template-columns:44px minmax(0,1fr);gap:14px;align-items:center;margin:-2px 0;font-size:12.5px;color:var(--muted)}
+.lic{position:relative;z-index:1;justify-self:center;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--bg);color:var(--muted);box-shadow:inset 0 0 0 1.5px var(--line)}
+.lic svg{width:14px;height:14px}
+.leg b{color:var(--ink);font-weight:600}
+.leg a{color:var(--muted);text-underline-offset:3px}
+.leg a:hover{color:var(--accent)}
 .addrow{margin:12px 0 0 58px}
 .addrow .btn{border-style:dashed;background:transparent;color:var(--muted)}
 .addrow .btn:hover{color:var(--ink)}
@@ -128,6 +135,7 @@ a.stat.next:hover{filter:brightness(1.05)}
   .ic{width:36px;height:36px}
   .ic svg{width:17px;height:17px}
   .tl::before{left:17px}
+  .leg{grid-template-columns:36px minmax(0,1fr);gap:10px}
   .addrow{margin-left:46px}
   .dayhead h2{font-size:23px}
   .daymap{height:240px}
@@ -192,8 +200,35 @@ var ICON = {
   meal: svg('<path d="M4 3v6a3 3 0 0 0 6 0V3M7 3v18M20 15V3a5 5 0 0 0-4 5v5a2 2 0 0 0 2 2h2zm0 0v6"/>'),
   game: svg('<circle cx="12" cy="12" r="9"/><path d="m12 7.5 4 2.9-1.5 4.6h-5L8 10.4z"/><path d="M12 3v4.5M21 10.5l-5 0M17.5 19.5 14.5 15M6.5 19.5 9.5 15M3 10.5h5"/>'),
   event: svg('<path d="M3 9a3 3 0 0 0 0 6v3a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-3a3 3 0 0 0 0-6V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1z"/><path d="M14 5v2M14 11v2M14 17v2"/>'),
-  other: svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>')
+  other: svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+  walk: svg('<circle cx="13" cy="4" r="2"/><path d="m9 21 2-6 3 3v3M7 12l2-4 4-1 3 4 3 1M11 15l1-5"/>'),
+  metro: svg('<rect x="6" y="3" width="12" height="14" rx="3"/><path d="M6 11h12M9 21l1.5-4M15 21l-1.5-4"/><circle cx="9.5" cy="14" r=".5"/><circle cx="14.5" cy="14" r=".5"/>')
 };
+
+/* Rough travel times between two stops, with no routing service: straight-line distance plus 30% for streets.
+   Walk at 4.8 km/h. Metro or bus: about 12 minutes to reach the station and wait, then 25 km/h.
+   Car or Uber: about 5 minutes for pickup, then 20 km/h in town or 45 km/h on longer runs like the airport.
+   Walking is suggested up to 25 minutes, metro or bus after that; the other two show alongside. */
+function legOf(a, b){
+  var R = 6371, rad = Math.PI/180, dLat = (b.lat-a.lat)*rad, dLng = (b.lng-a.lng)*rad;
+  var h = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dLng/2)*Math.sin(dLng/2);
+  var km = 2*R*Math.asin(Math.sqrt(h)) * 1.3;
+  if(km < 0.08) return null;
+  function r5(m){ return m < 15 ? Math.round(m) : Math.round(m/5)*5; }
+  var walk = Math.max(1, Math.round(km / 4.8 * 60));
+  return {km:km, walk:walk, metro:r5(12 + km / 25 * 60), car:r5(5 + km / (km > 8 ? 45 : 20) * 60), mode:walk <= 25 ? "walk" : "metro"};
+}
+function legHtml(from, to){
+  var g = legOf(from.loc, to.loc); if(!g) return "";
+  var dist = g.km < 1 ? Math.round(g.km*10)*100+" m" : g.km.toFixed(1)+" km";
+  var opts = [];
+  if(g.walk <= 60) opts.push({m:"walk", t:"~"+g.walk+" min walk"});
+  if(g.walk > 12){ opts.push({m:"metro", t:"~"+g.metro+" min metro/bus"}); opts.push({m:"car", t:"~"+g.car+" min Uber"}); }
+  opts.sort(function(a,b){ return (b.m===g.mode) - (a.m===g.mode); });
+  var url = G+"maps/dir/?api=1&origin="+from.loc.lat+","+from.loc.lng+"&destination="+to.loc.lat+","+to.loc.lng+"&travelmode="+(g.mode==="walk" ? "walking" : "transit");
+  return '<li class="leg"><span class="lic">'+ICON[g.mode]+'</span><span>'+opts.map(function(o,i){ return i ? o.t : '<b>'+o.t+'</b>'; }).join(" · ")+
+    ' · '+dist+(from.loc.approx || to.loc.approx ? " (rough)" : "")+' · <a href="'+url+'" target="_blank" rel="noopener">Route ↗</a></span></li>';
+}
 
 /* Bookings, added places and the trip passcode are shared with the food guide through the same keys. */
 var BOOK = lsJson("madridBookings", {});
@@ -411,13 +446,15 @@ function render(){
     STOPS[d] = stops;
     if(td) total += td.meals.length;
     rows.forEach(function(r){ if(r.kind==="plan") plans++; if(r.kind==="meal" && td && td.meals.indexOf(mealOf(r.b.t))>=0) filled++; });
+    var prev = null;
     var items = rows.map(function(r){
-      var cls = "";
+      var cls = "", leg = "";
+      if(r.loc){ if(prev) leg = legHtml(prev, r); prev = r; }
       if(r.kind!=="open"){
         if(r===next || (next && r.kind===next.kind && r.d===next.d && r.t===next.t && rowTitle(r)===rowTitle(next))) cls = " next";
         else if(past || (isToday && r.t && r.t < nowTime())) cls = " past";
       }
-      return rowHtml(r, cls);
+      return leg + rowHtml(r, cls);
     }).join("");
     var adding = FORM && FORM.id==null && FORM.d===d;
     return '<section class="day'+(isToday?" today":"")+'" id="d'+d+'" aria-labelledby="h'+d+'">'+
